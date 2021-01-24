@@ -1,7 +1,9 @@
 import numpy as np
 import math
+from Lib.self_made import time_mesure
 
 class handsign_judge_1:
+    sign_time=time_mesure.Time_mesure()
 
     def __init__(self):
         self.landmarks = {}
@@ -96,17 +98,42 @@ class handsign_judge_1:
 
     #結果を返す これをメインで使う
     def result(self):
-        print("手のひらの表裏判別",self.FrontorBack())
-        print("中指の付け根の向き",self.MiddlefingerVector())
-        print("指の曲げ伸ばし",self.FingerRaising())
+        #print("手のひらの表裏判別",self.FrontorBack())
+        #print("中指の付け根の向き",self.MiddlefingerVector())
+        #print("指の曲げ伸ばし",self.FingerRaising())
 
-        if self.FrontorBack_info == "reverse":
+        if self.FrontorBack() == "reverse":
             if self.FingerRaising() == {'5': 1, '9': 1, '13': -1, '17': -1}:
                 self.result_info = "choice_mode_move"
             elif self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': 1}:
                 self.result_info = "choice_mode_cleck"
+            
+            elif self.FingerRaising() == {'5': 1, '9': 1, '13': 1, '17': 1}:
+                if (
+                    self.result_info != "keyboard_wait_start" and
+                    self.result_info != "keyboard_wait_01" and
+                    self.result_info != "keyboard_wait_02"
+                    ):
+                    self.result_info = "keyboard_wait_start"
+                elif self.result_info == "keyboard_wait_01":
+                    self.result_info = "keyboard_wait_02"
+                #"keyboard_wait_start"か"keyboard_wait_01"ならそのまま
 
-        elif self.FrontorBack_info == "overse":
+
+            elif self.FingerRaising() == {'5': -1, '9': -1, '13': -1, '17': -1}:
+                if self.result_info == "keyboard_wait_start":
+                    handsign_judge_1.sign_time.time_target_set("keyboard_wait") #time_mesureモジュールで開始時間設定
+                    self.result_info = "keyboard_wait_01"
+                elif self.result_info == "keyboard_wait_01": #さっき握ったままならそのまま
+                    pass
+                elif self.result_info == "keyboard_wait_02":
+                    if handsign_judge_1.sign_time.time_measu("keyboard_wait") < 5: #開始時間設定から5秒以内なら
+                        self.result_info = "keyboard_open"
+                else:
+                    self.result_info="握りこぶし コマンドなし"
+
+
+        elif self.FrontorBack() == "overse":
             if self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': -1}:
                 self.result_info = "shortcut_1"
             if self.FingerRaising() == {'5': 1, '9': 1, '13': -1, '17': -1}:

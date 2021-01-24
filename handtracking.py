@@ -48,8 +48,8 @@ ImgLeft = cv2.imread(IMG_LEFT_NAME)
 ImgRight = cv2.imread(IMG_RIGHT_NAME)
 #ここにアクティブウィンドウのスクショの画像を表示するやつを書く
 
-hoge2=drowing.drowing(BrackImg,ImgLeft,ImgRight,IMG_LEFT_NAME,IMG_RIGHT_NAME)
-
+hoge2=drowing.drowing(ImgLeft,ImgRight)
+hoge1=handsign_judge.handsign_judge_1()
 ########################################
 
 
@@ -80,7 +80,6 @@ while cap.isOpened():
 
             #オリジナル################################
 
-            hoge1=handsign_judge.handsign_judge_1()
             #タプルhanc_landmarks内の辞書型landmarkを取得　
             #辞書型を入れるにはタプル型の方が良い為　またパフォーマンスもタプル型の穂王が良い為
             #詳細は調べる
@@ -89,7 +88,10 @@ while cap.isOpened():
                 #print(idx,landmark.z)
                 
                 hoge1.setting(idx,landmark.x,landmark.y,landmark.z)
-            print(hoge1.result())
+            
+            #ここでprint(hoge1.result())などとしてhoge1を呼び出してしまうと
+            # 次のdrowing_3Dviewが反応しなくなってしまうのでやらない
+
             #↓defaultの黒い画面になってしまう
             #cv2.imwrite(IMG_LEFT_NAME,BrackImg)
             #cv2.imwrite(IMG_RIGHT_NAME,BrackImg)
