@@ -2,10 +2,12 @@ import cv2
 import mediapipe as mp
 import time
 import numpy as np
+import math
 from Lib.self_made import (
                         handsign_judge,
                         time_mesure,
                         drowing,
+                        img_processing,
                             )
 
 mp_drawing = mp.solutions.drawing_utils
@@ -35,21 +37,28 @@ VERTEX_DISTANCE=12 #(角膜)頂点間距離{mm} 通常12mmくらい 角膜の頂
 DISPLAY_WIDTH=100 #眼鏡に取り付けるディスプレイの横幅[mm]
 #CAMERA_DISTANCE=150 #左右のカメラの距離[mm]
 
+PALM_WIDTH=70 #人差し指の付け根の中心から小指の付け根の中心までの距離[mm]
+
+MAX_CAMERA_SIDE_ANGLE = math.pi/3 #カメラの横方向の画角[rad]
+MAX_CAMERA_VERTICAL_ANGLE = math.pi/3 #カメラの縦方向の画角[rad]
+
 cv2.namedWindow(ACTWIN_L_NAME) # これで一つwindowが開く　特に変数に代入したりする必要はない
 cv2.namedWindow(ACTWIN_R_NAME) 
 
-#左右のディスプレイに表示する真っ黒の画像を生成
-BrackImg = np.zeros((actwin_height,actwin_width,3))
+#左右のディスプレイに表示する真っ白の画像を生成
+WHITE_IMG = np.full((actwin_height,actwin_width,3),255)
 IMG_LEFT_NAME = 'ImgLeft.png'
 IMG_RIGHT_NAME = 'ImgRight.png'
-cv2.imwrite(IMG_LEFT_NAME,BrackImg)
-cv2.imwrite(IMG_RIGHT_NAME,BrackImg)
+cv2.imwrite(IMG_LEFT_NAME,WHITE_IMG)
+cv2.imwrite(IMG_RIGHT_NAME,WHITE_IMG)
 ImgLeft = cv2.imread(IMG_LEFT_NAME)
 ImgRight = cv2.imread(IMG_RIGHT_NAME)
 #ここにアクティブウィンドウのスクショの画像を表示するやつを書く
 
-hoge2=drowing.drowing(ImgLeft,ImgRight)
-hoge1=handsign_judge.handsign_judge_1()
+hoge1=handsign_judge.handsign_judge_1(PALM_WIDTH,MAX_CAMERA_SIDE_ANGLE,MAX_CAMERA_VERTICAL_ANGLE)#先にこっち
+lefteye_process=img_processing.plr_trns(VERTEX_DISTANCE,DISPLAY_WIDTH,-PUPILLARY_DISTANCE/2)
+righteye_process=img_processing.plr_trns(VERTEX_DISTANCE,DISPLAY_WIDTH,PUPILLARY_DISTANCE/2)
+hoge2=drowing.drowing(ImgLeft,ImgRight,hoge1,lefteye_process,righteye_process)#インスタンスも引き数にできる
 ########################################
 
 
@@ -93,8 +102,8 @@ while cap.isOpened():
             # 次のdrowing_3Dviewが反応しなくなってしまうのでやらない
 
             #↓defaultの黒い画面になってしまう
-            #cv2.imwrite(IMG_LEFT_NAME,BrackImg)
-            #cv2.imwrite(IMG_RIGHT_NAME,BrackImg)
+            #cv2.imwrite(IMG_LEFT_NAME,WHITE_IMG)
+            #cv2.imwrite(IMG_RIGHT_NAME,WHITE_IMG)
             #ImgLeft = cv2.imread(IMG_LEFT_NAME)
             #ImgRight = cv2.imread(IMG_RIGHT_NAME)
             hoge2.drowing_3Dview(hoge1.result())
@@ -107,8 +116,8 @@ while cap.isOpened():
     cv2.imshow(ACTWIN_L_NAME,ImgLeft) #winname(ここではACTWIN_L_NAME)にmat(ここではImgLeft)を表示
     cv2.imshow(ACTWIN_R_NAME,ImgRight)
     #↓defaultの黒い画面になってしまう
-    #cv2.imwrite(IMG_LEFT_NAME,BrackImg)
-    #cv2.imwrite(IMG_RIGHT_NAME,BrackImg)
+    #cv2.imwrite(IMG_LEFT_NAME,WHITE_IMG)
+    #cv2.imwrite(IMG_RIGHT_NAME,WHITE_IMG)
     #ImgLeft = cv2.imread(IMG_LEFT_NAME)
     #ImgRight = cv2.imread(IMG_RIGHT_NAME)
     if cv2.waitKey(5) & 0xFF == 27:

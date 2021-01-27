@@ -5,7 +5,12 @@ from Lib.self_made import time_mesure
 class handsign_judge_1:
     sign_time=time_mesure.Time_mesure()
 
-    def __init__(self):
+    def __init__(self,palm_width,max_side_angle,max_vertical_angle):
+        self.palm_width=palm_width#手のひらの横幅
+        self.halfof_palm_width = self.palm_width / 2 #手のひらの横幅の半分
+        self.MSA=max_side_angle#横方向の画角
+        self.MVA=max_vertical_angle#縦方向の画角
+
         self.landmarks = {}
         self.landmark_x=0.0
         self.landmark_y=0.0
@@ -19,6 +24,7 @@ class handsign_judge_1:
         self.middlefingure_vector_1ofzettaichi=0.0
         self.middlefingure_vector=[]
 
+        #finger_raising
         self.FingerRaising_value = 0.0
         self.x_n=0.0 
         self.x_a=0.0 
@@ -31,6 +37,13 @@ class handsign_judge_1:
         self.y_q=0.0 
         self.FingerRaising_info = {}
 
+        #abs_distance_2D
+        self.abdis2D_result = float()
+
+        #palm_dipth
+        self.palm_dipth_info=0.0
+
+        #result
         self.result_info="a"
 
     #まずこれを呼び出して設定
@@ -95,6 +108,22 @@ class handsign_judge_1:
             else :
                 self.FingerRaising_info[str(i)] = -1
         return self.FingerRaising_info
+
+    def abdis_2D(self,abdis2D_mknum1,abdis2D_mknum2):#absolute distance 2D 2点間のx,y方向の絶対値
+        
+        self.abdis2D_result = math.sqrt(
+            ((self.landmarks[abdis2D_mknum1][0] - self.landmarks[abdis2D_mknum2][0]))**2 +
+            ((self.landmarks[abdis2D_mknum1][1] - self.landmarks[abdis2D_mknum2][1]))**2
+        )
+        return self.abdis2D_result
+
+    #手のひらの横幅から手の距離を求める
+    def palm_dipth(self,shown_palm_width): #shown_palm_width画像の横幅に対して何倍か
+        self.halfof_shwplmwid = shown_palm_width / 2
+        self.halfof_shwplmwid_angle = self.MSA * self.halfof_shwplmwid #画角×画像の横幅に対して何倍か で手のひらの幅の角度の半分が求まる
+        #z[mm] = 手のひらの横幅の半分[mm] / sin(手のひらの角度の半分)
+        self.palm_dipth_info = self.halfof_palm_width / math.sin(self.halfof_shwplmwid_angle)
+        return self.palm_dipth_info
 
     #結果を返す これをメインで使う
     def result(self):
