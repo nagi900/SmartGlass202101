@@ -5,6 +5,10 @@ class drowing:
     FONT1 = cv2.FONT_HERSHEY_COMPLEX
     FONT2 = cv2.FONT_HERSHEY_COMPLEX_SMALL
     CLEAR_COLOR = (255,255,255)
+
+    #あとで別ファイルにまとめたい
+    #キーボードの四角
+    KEYBOARD = [ [0,-100,150],[500,-100,150],[500,0,0],[0,0,0] ]
     
 
     def __init__(self,Img1=None,Img2=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None):
@@ -17,6 +21,9 @@ class drowing:
         self.palm_width = None
 
         self.object_position_infos={} #オブジェクトの座標 手のひらの横幅を基準に考える
+
+        self.eyeL_procesed_keyboard = [] #移動したキーボードの頂点の座標のリスト
+        self.eyeR_procesed_keyboard = []
 
         self.text_prehansig_backup = None
         self.current_mode = []
@@ -37,12 +44,21 @@ class drowing:
         self.object_position_infos["keyboard"] = self.palm_width
         cv2.putText(self.ImgLeft,str(self.object_position_infos["keyboard"]),(0,40),drowing.FONT1,1,(0,0,0),2)
 
-        pointLT=self.img_pro_insname_L.point_processing((50,50,500))
-        pointRT=self.img_pro_insname_L.point_processing((0,50,500))
+        #
+        eyeL_pointLT=self.img_pro_insname_L.point_processing((-10,50,100))
+        eyeL_pointRT=self.img_pro_insname_L.point_processing((10,50,100))
+        eyeR_pointLT=self.img_pro_insname_R.point_processing((-10,50,100))
+        eyeR_pointRT=self.img_pro_insname_R.point_processing((10,50,100))
 
-        cv2.line(self.ImgLeft,pointLT,pointRT,(0,0,0)) #引き数で座標指定
-        cv2.line(self.ImgRight,pointLT,pointRT,(0,0,0))
-        print("線を書きました！左目には",pointLT,"から",pointRT,"まで")
+        cv2.line(self.ImgLeft,eyeL_pointLT,eyeL_pointRT,(0,0,0)) #引き数で座標指定
+        cv2.line(self.ImgRight,eyeR_pointLT,eyeR_pointRT,(0,0,0))
+        #
+
+        for i in range(0,5):
+            self.eyeL_procesed_keyboard.append = self.img_pro_insname_L.point_processing(drowing.KEYBOARD[i])
+            self.eyeR_procesed_keyboard.append = self.img_pro_insname_R.point_processing(drowing.KEYBOARD[i])
+        cv2.fillConvexPoly(self.ImgLeft,self.eyeL_procesed_keyboard,(0,0,0))
+        cv2.fillConvexPoly(self.ImgRight,self.eyeR_procesed_keyboard,(0,0,0))
 
     def drowing_3Dview(self,text_prehansig): #present handsign 現在のハンドサイン
             
