@@ -5,4 +5,4 @@ SmartGlass2020の改良版になります。
 https://google.github.io/mediapipe/solutions/hands
 
 ## 表示方法
-![シーケンス図](/Discription/SmartGlass202101_sequence01.png)
+![![シーケンス図](/Discription/SmartGlass202101_sequence01.png)]
