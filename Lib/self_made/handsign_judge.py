@@ -3,13 +3,13 @@ import math
 from Lib.self_made import time_mesure
 
 class handsign_judge_1:
-    sign_time=time_mesure.Time_mesure()
+    sign_time_ins=time_mesure.Time_mesure()
 
-    def __init__(self,palm_width,max_side_angle,max_vertical_angle):
+    def __init__(self,palm_width,max_angle):
         self.palm_width=palm_width#手のひらの横幅
-        self.halfof_palm_width = self.palm_width / 2 #手のひらの横幅の半分
-        self.MSA=max_side_angle#横方向の画角
-        self.MVA=max_vertical_angle#縦方向の画角
+        self.halfof_palm_width = palm_width / 2 #手のひらの横幅の半分
+        self.MSA=max_angle[0] #max_side_angle横方向の画角
+        self.MVA=max_angle[1] #max_vertical_angle縦方向の画角
 
         self.landmarks = {}
         self.landmark_x=0.0
@@ -21,7 +21,7 @@ class handsign_judge_1:
         self.middlefingure_vector_x=0.0
         self.middlefingure_vector_y=0.0
         self.middlefingure_vector_z=0.0
-        self.middlefingure_vector_1ofzettaichi=0.0
+        self.middlefingure_vector_1ofabs=0.0
         self.middlefingure_vector=[]
 
         #finger_raising
@@ -37,7 +37,10 @@ class handsign_judge_1:
         self.y_q=0.0 
         self.FingerRaising_info = {}
 
-        #abs_distance_2D
+        #absdis_3D
+        self.abdis3D_result = float()
+
+        #absdis_2D
         self.abdis2D_result = float()
 
         #palm_dipth
@@ -50,9 +53,10 @@ class handsign_judge_1:
     def setting(self,idx,landmark_x,landmark_y,landmark_z):#landmark):#
         self.idx=idx
         #self.landmark=landmark
-        self.landmark_x=landmark_x
-        self.landmark_y=landmark_y
-        self.landmark_z=landmark_z
+        self.landmark_x = -landmark_x+0.5 #カメラ映像中央をx=0とする 画面が鏡写しなので、値を反転
+        self.landmark_y = (landmark_y-0.5) - self.MSA/self.MVA
+        #カメラ映像中央をy=0とし、縦方向角度と単位をそろえる 下向きがyだったので、反転して上向きをyに
+        self.landmark_z = landmark_z
         this_idx_position=[self.landmark_x,self.landmark_y,self.landmark_z]
         
         self.landmarks[self.idx] = this_idx_position #self.landmark
@@ -60,9 +64,9 @@ class handsign_judge_1:
     #手のひらの裏表を判別
     def FrontorBack(self):
         if self.landmarks[5][0]<self.landmarks[17][0]:#右手で人差し指の付け根が小指の付け根より左にあるなら
-            self.FrontorBack_info = "overse"
-        else :
             self.FrontorBack_info = "reverse"
+        else :
+            self.FrontorBack_info = "overse"
         return self.FrontorBack_info
 
     #中指の付け根のの向きを判別
@@ -71,16 +75,12 @@ class handsign_judge_1:
         self.middlefingure_vector_y=self.landmarks[9][1] - self.landmarks[0][1]
         self.middlefingure_vector_z=self.landmarks[9][2] - self.landmarks[0][2]
         #(1/ベクトルの絶対値)を求める
-        self.middlefingure_vector_1ofzettaichi = 1 / math.sqrt(
-            self.middlefingure_vector_x**2+
-            self.middlefingure_vector_y**2+
-            self.middlefingure_vector_z**2
-        )
+        self.middlefingure_vector_1ofabs = 1 / self.abdis_3D(9,0)
         #各ベクトルに(1/ベクトルの絶対値)を掛ける
         self.middlefingure_vector_info =  [
-                self.middlefingure_vector_1ofzettaichi*self.middlefingure_vector_x,
-                self.middlefingure_vector_1ofzettaichi*self.middlefingure_vector_y,
-                self.middlefingure_vector_1ofzettaichi*self.middlefingure_vector_z
+                self.middlefingure_vector_1ofabs*self.middlefingure_vector_x,
+                self.middlefingure_vector_1ofabs*self.middlefingure_vector_y,
+                self.middlefingure_vector_1ofabs*self.middlefingure_vector_z
         ]
         return self.middlefingure_vector_info
 
@@ -103,11 +103,23 @@ class handsign_judge_1:
                 self.z_n*(self.z_q-self.z_a)
                 )
             #キーを付け根の番号にしてFingerRaising_infoに指の曲げ伸ばしを代入
-            if self.FingerRaising_value > 0:
+            if self.FingerRaising_value - self.abdis_3D(9,0)/2 >= 0:
                 self.FingerRaising_info[str(i)] = 1
+            #手のひらの縦の長さの1/3>付け根との差>0 の範囲内なら
+            elif self.FingerRaising_value > 0:
+                self.FingerRaising_info[str(i)] = 0
             else :
                 self.FingerRaising_info[str(i)] = -1
         return self.FingerRaising_info
+
+    def abdis_3D(self,abdis3D_mknum1,abdis3D_mknum2):#absolute distance 3D 2点間のx,y,z方向の絶対値
+        
+        self.abdis3D_result = math.sqrt(
+            ((self.landmarks[abdis3D_mknum1][0] - self.landmarks[abdis3D_mknum2][0]))**2 +
+            ((self.landmarks[abdis3D_mknum1][1] - self.landmarks[abdis3D_mknum2][1]))**2 +
+            ((self.landmarks[abdis3D_mknum1][2] - self.landmarks[abdis3D_mknum2][2]))**2 
+        )
+        return self.abdis3D_result
 
     def abdis_2D(self,abdis2D_mknum1,abdis2D_mknum2):#absolute distance 2D 2点間のx,y方向の絶対値
         
@@ -118,8 +130,8 @@ class handsign_judge_1:
         return self.abdis2D_result
 
     #手のひらの横幅から手の距離を求める
-    def palm_dipth(self,shown_palm_width): #shown_palm_width画像の横幅に対して何倍か
-        self.halfof_shwplmwid = shown_palm_width / 2
+    def palm_dipth(self):
+        self.halfof_shwplmwid = self.abdis_3D(5,17) / 2 #5は人差し指の付け根 17は小指の付け根
         self.halfof_shwplmwid_angle = self.MSA * self.halfof_shwplmwid #画角×画像の横幅に対して何倍か で手のひらの幅の角度の半分が求まる
         #z[mm] = 手のひらの横幅の半分[mm] / sin(手のひらの角度の半分)
         self.palm_dipth_info = self.halfof_palm_width / math.sin(self.halfof_shwplmwid_angle)
@@ -131,7 +143,10 @@ class handsign_judge_1:
         #print("中指の付け根の向き",self.MiddlefingerVector())
         #print("指の曲げ伸ばし",self.FingerRaising())
 
-        if self.FrontorBack() == "reverse":
+        if self.FingerRaising() == {"5":1, "9":0, '13':-1, '17':-1}:
+            self.result_info = "3D_tranceform"
+
+        elif self.FrontorBack() == "reverse":
             if self.FingerRaising() == {'5': 1, '9': 1, '13': -1, '17': -1}:
                 self.result_info = "choice_mode_move"
             elif self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': 1}:
@@ -151,12 +166,12 @@ class handsign_judge_1:
 
             elif self.FingerRaising() == {'5': -1, '9': -1, '13': -1, '17': -1}:
                 if self.result_info == "keyboard_wait_start":
-                    handsign_judge_1.sign_time.time_target_set("keyboard_wait") #time_mesureモジュールで開始時間設定
+                    handsign_judge_1.sign_time_ins.time_target_set("keyboard_wait") #time_mesureモジュールで開始時間設定
                     self.result_info = "keyboard_wait_01"
                 elif self.result_info == "keyboard_wait_01": #さっき握ったままならそのまま
                     pass
                 elif self.result_info == "keyboard_wait_02":
-                    if handsign_judge_1.sign_time.time_measu("keyboard_wait") < 5: #開始時間設定から5秒以内なら
+                    if handsign_judge_1.sign_time_ins.time_measu("keyboard_wait") < 5: #開始時間設定から5秒以内なら
                         self.result_info = "keyboard_open"
                 else:
                     self.result_info="握りこぶし コマンドなし"
