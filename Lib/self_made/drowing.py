@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import json
 
 class drowing:
     FONT1 = cv2.FONT_HERSHEY_COMPLEX
@@ -8,13 +9,14 @@ class drowing:
 
     #あとで別ファイルにまとめたい
     #キーボードの四角 原点をスペースキーの下部真ん中とする
-    KEYBOARD = [ [-250,50,250],[300,50,250],[300,0,0],[-250,0,0] ]
+    KEYBOARD_BASE = [ [-250,50,250],[300,50,250],[300,0,0],[-250,0,0] ]
     KEYBOARD_BUTTON = [ [-20,5,40],[20,5,40],[20,2,0],[-20,2,0] ] #ボタンの原点はボタンの下部真ん中
     KEYBOARD_SPACE = [ [-50,5,40],[50,5,40],[50,2,0],[-50,2,0] ]
     #enterはキーボード原点から 見ずらいから、隣のキーと1cm空ける
     KEYBOARD_ENTER = [ [260,50,245],[300,50,245],[300,7,55],[260,7,55] ] 
     KEYBOARD_COLOR = (0,0,0)
-    KEYBOARD_BUTTON_COLOR = (255,255,0)
+    KEYBOARD_BUTTON_COLOR = [255,255,0]
+
 
     def __init__(self,Img1=None,Img2=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None):
         self.ImgLeft=Img1#cv2で扱える形にしたもの？
@@ -55,14 +57,15 @@ class drowing:
         self.eyeR_ofter_pro_object=[]
         for i in range(0,4):
             self.before_pro_object=[
-                drowing.KEYBOARD[i][0], 
-                drowing.KEYBOARD[i][1], 
-                drowing.KEYBOARD[i][2]+self.palm_dipth_info
+                drowing.KEYBOARD_BASE[i][0], 
+                drowing.KEYBOARD_BASE[i][1], 
+                drowing.KEYBOARD_BASE[i][2]+self.palm_dipth_info
             ]
             self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
             self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-        cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_COLOR)
-        cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_COLOR)
+        if bool(self.eyeL_ofter_pro_object) == True:#描画距離内なら    
+            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_COLOR)
+            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_COLOR)
 
         #キーボードのボタンを描画
         for k in range(1,5):#縦方向
@@ -78,8 +81,9 @@ class drowing:
                     ]
                     self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
                     self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-                cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-                cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+                if self.eyeL_ofter_pro_object:#描画距離外ならcontinue 起こるはずがないけど一応
+                    cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+                    cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
 
         self.eyeL_ofter_pro_object=[]
         self.eyeR_ofter_pro_object=[]
@@ -91,9 +95,11 @@ class drowing:
             ]
             self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
             self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-        cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-        cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
         
+        if self.eyeL_ofter_pro_object:#描画距離内なら    
+            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+
         self.eyeL_ofter_pro_object=[]
         self.eyeR_ofter_pro_object=[]
         for i in range(0,4):
@@ -106,6 +112,13 @@ class drowing:
             self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
         cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
         cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+        if self.eyeL_ofter_pro_object:#描画距離内なら    
+            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+
+        #with open("Obect_info/keyboard.json") as KEYBOARD_JSON:
+        #    key_position= np.array(KEYBOARD_JSON["key"])
+            
 
     def drowing_3Dview(self,text_prehansig): #present handsign 現在のハンドサイン
             

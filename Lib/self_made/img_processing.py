@@ -33,6 +33,8 @@ class plr_trns: #polar transformation
         self, 
         original_position,#リスト[x,y,z] 直交座標
     ):
+        if original_position[2] < 10:#zが目の前1cmより後方なら
+            return
         #オブジェクトの座標を目の位置に合わせてずらす
         self.slided_position_x = (
             original_position[0] #原点をずらした方向と反対側に値が変わる
