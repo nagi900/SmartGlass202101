@@ -12,4 +12,4 @@ drowing.pyからhandsign_judge.pyを呼び出しジェスチャーを判断し�
 
 ### 手のひらの距離の測り方
 handsign_judge.pyのメソッドpalm_dipthを使用しています。<br>
-![palm_dipth解説](Discription/construction__handsign_judge__palm_dipth.pdf)
+![palm_dipth解説](Discription/construction__handsign_judge__palm_dipth-1.png)
