@@ -30,8 +30,10 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.text_prehansig_backup = None
         self.current_mode = []
 
-        
-        #OBJ2List 参考元 http://www.cloud.teu.ac.jp/public/MDF/toudouhk/blog/2015/01/15/OBJTips/
+        #OBJ2List
+        self.OBJ2List_path_backup=None
+        self.OBJ2List_result_backup={}#keyがpathの辞書
+        # 参考元 http://www.cloud.teu.ac.jp/public/MDF/toudouhk/blog/2015/01/15/OBJTips/
         self.numVertices = 0
         self.numUVs = 0
         self.numNormals = 0
@@ -44,6 +46,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.uvIDs = []
         self.normalIDs = []
 
+        #drowing_keyboard
         self.LOADED_KEYBOARD_JSON = None
         self.key_position = None
 
@@ -60,7 +63,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         
         if reset_range == "object":
             cv2.fillConvexPoly(self.ImgRight,np.array([
-                (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
+                (0,0),(200,0),(200,50),(200,100),(500,100),(500,500),(0,500)
             ]),drowing.CLEAR_COLOR)
             cv2.fillConvexPoly(self.ImgLeft,np.array([
                 (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
@@ -73,6 +76,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
 
         #objファイルをリストにする
     def OBJ2List(self,path):
+        #すでに読み込まれていたものであれば 
+        if path in self.OBJ2List_result_backup:#self.OBJ2List_result_backup.key()と同じ
+            return self.OBJ2List_result_backup[path]
         for line in open(path, "r"):
             vals = line.split()
             if len(vals) == 0:
@@ -108,7 +114,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 self.uvIDs.append(uvID)
                 self.normalIDs.append(nvID)
                 self.numFaces += 1
-        return self.vertices, self.uvs, self.normals, self.faceVertIDs, self.uvIDs, self.normalIDs, self.vertexColors
+        self.OBJ2List_result_backup[path] =[ self.vertices, self.uvs, self.normals, self.faceVertIDs, self.uvIDs, self.normalIDs, self.vertexColors ]
+        return self.OBJ2List_result_backup[path]
 
     def drowing_keyboard(self):
         self.palm_dipth_info = self.judge_instance.palm_dipth()#rect_trans_info[0][2]と一緒だからこれ要らないかも
@@ -151,6 +158,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
             
     def drowing_OBJ(self,path,magnification=[1,1,1],rotation=[1,1,1],translation=[0,0,0]):#mgnification:拡大 rotation:回転 taranslation:平行移動
+        
         obj_list=self.OBJ2List(path)
         obj_pointS = obj_list[0]
         for obj_point in obj_pointS:
@@ -160,10 +168,11 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 float(obj_point[2])*magnification[2] *rotation[2] +translation[2],
             ]
             if ( self.img_pro_insname_L.point_processing(obj_point) ) and ( self.img_pro_insname_R.point_processing(obj_point) ): 
-                cv2.circle(self.ImgLeft, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
-                cv2.circle(self.ImgRight, self.img_pro_insname_R.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+                cv2.circle(self.ImgLeft, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(255-obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+                cv2.circle(self.ImgRight, self.img_pro_insname_R.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(255-obj_point[2]*0.5), int(obj_point[2]*0.5) ))
 
-    def drowing_landmarks(self):
+    #手を書く 現時点では点のみ
+    def drowing_hand_landmarks(self):
         self.eyeL_ofter_pro_object=[]
         self.eyeR_ofter_pro_object=[]
         for transd_lndmrk in self.judge_instance.rect_trans():
@@ -172,8 +181,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 cv2.circle(self.ImgRight, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,(255,0,0),2)
 
     def drowing_3Dview(self,text_prehansig,mode=None): #present handsign 現在のハンドサイン
-        if mode == "drowing hand":
+        if mode == "drowing _hand":
             self.img_reset("object")
+            self.drowing_hand_landmarks()
         ##PIL型をopenCV型に変換 PIL型とは？
         #new_image = np.array(ImgLeft, dtype=np.uint8)
         #new_image = cv2.cvtColor(new_image, cv2.COLOR_RGB2BGR)
@@ -196,10 +206,15 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         if text_prehansig == "shortcut_4":
             if not "3Dobject" in self.current_mode:
                 self.img_reset("current_mode")
-                self.current_mode.append("3Dobject")
-                self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10])
+                self.current_mode.append("3Dobject")#キーボード消えちゃうからとりあえず画面消去はしない
+                self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],translation=[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
                 cv2.putText(self.ImgLeft,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
                 cv2.putText(self.ImgRight,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
 
-        if mode == "drowing hand":
-            self.drowing_landmarks()
+        if text_prehansig == "3D_tranceform" and "3Dobject" in self.current_mode:
+                self.img_reset("current_mode")
+                self.img_reset("object")
+                self.current_mode.append("3Dobject")
+                self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],self.judge_instance.midfin_vec(),[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
+                cv2.putText(self.ImgLeft,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
+                cv2.putText(self.ImgRight,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)

@@ -74,7 +74,7 @@ class handsign_judge_1:
         return self.FrontorBack_info
 
     #中指の付け根のの向きを判別
-    def MiddlefingerVector(self):
+    def midfin_vec(self):
         self.middlefingure_vector_x=self.landmarks[9][0] - self.landmarks[0][0]
         self.middlefingure_vector_y=self.landmarks[9][1] - self.landmarks[0][1]
         self.middlefingure_vector_z=self.landmarks[9][2] - self.landmarks[0][2]
@@ -94,7 +94,7 @@ class handsign_judge_1:
         #APとnは垂直 ∴AP・n=0 
         #空間内の任意の点Q(x_q,y_q,z_q) を考えると　AQ・n>0なら面Sよりnベクトル方向に正
         for i in range(5,18,4):
-            self.x_n,self.y_n,self.z_n=self.MiddlefingerVector()
+            self.x_n,self.y_n,self.z_n=self.midfin_vec()
             self.x_a=self.landmarks[i][0]
             self.x_q=self.landmarks[i+3][0]
             self.y_a=self.landmarks[i][1]
@@ -164,7 +164,7 @@ class handsign_judge_1:
     #結果を返す これをメインで使う
     def result(self):
         #print("手のひらの表裏判別",self.FrontorBack())
-        #print("中指の付け根の向き",self.MiddlefingerVector())
+        #print("中指の付け根の向き",self.midfin_vec())
         #print("指の曲げ伸ばし",self.FingerRaising())
 
         if self.FingerRaising() == {"5":1, "9":0, '13':-1, '17':-1}:
