@@ -36,6 +36,24 @@ class drowing:
         self.text_prehansig_backup = None
         self.current_mode = []
 
+        
+        #OBJ2List http://www.cloud.teu.ac.jp/public/MDF/toudouhk/blog/2015/01/15/OBJTips/
+        self.numVertices = 0
+        self.numUVs = 0
+        self.numNormals = 0
+        self.numFaces = 0
+        self.vertices = []
+        self.uvs = []
+        self.normals = []
+        self.vertexColors = []
+        self.faceVertIDs = []
+        self.uvIDs = []
+        self.normalIDs = []
+
+        self.LOADED_KEYBOARD_JSON = None
+        self.key_position = None
+
+
     def img_reset(self,reset_range):
         if reset_range == "prehansig":
             #黒で画面全体をクリアする方法わかんなかったら、白の長方形で塗りつぶし
@@ -47,6 +65,45 @@ class drowing:
             cv2.rectangle(self.ImgRight,(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
             cv2.rectangle(self.ImgLeft,(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
         
+        #objファイルをリストにする
+    def OBJ2List(self,path):
+        for line in open(path, "r"):
+            vals = line.split()
+            if len(vals) == 0:
+                continue
+            if vals[0] == "v":
+                v = vals[1:4]
+                self.vertices.append(v)
+                if len(vals) == 7:
+                    vc = vals[4:7]
+                    self.vertexColors.append(vc)
+                self.numVertices += 1
+            if vals[0] == "vt":
+                vt = vals[1:3]
+                self.uvs.append(vt)
+                self.numUVs += 1
+            if vals[0] == "vn":
+                vn = vals[1:4]
+                self.normals.append(vn)
+                self.numNormals += 1
+            if vals[0] == "f":
+                fvID = []
+                uvID = []
+                nvID = []
+                for f in vals[1:]:
+                    w = f.split("/")
+                    if self.numVertices > 0:
+                        fvID.append(int(w[0])-1)
+                    if self.numUVs > 0:
+                        uvID.append(int(w[1])-1)
+                    if self.numNormals > 0:
+                        nvID.append(int(w[2])-1)
+                self.faceVertIDs.append(fvID)
+                self.uvIDs.append(uvID)
+                self.normalIDs.append(nvID)
+                self.numFaces += 1
+        return self.vertices, self.uvs, self.normals, self.faceVertIDs, self.uvIDs, self.normalIDs, self.vertexColors
+
     def drowing_keyboard(self):
         self.palm_dipth_info = self.judge_instance.palm_dipth() 
         self.object_position_infos["keyboard"] = self.palm_dipth_info
@@ -63,62 +120,40 @@ class drowing:
             ]
             self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
             self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-        if bool(self.eyeL_ofter_pro_object) == True:#描画距離内なら    
+        if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら    
             cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_COLOR)
             cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_COLOR)
 
-        #キーボードのボタンを描画
-        for k in range(1,5):#縦方向
-            for j in range(0,10):#横方向
-                self.eyeL_ofter_pro_object=[]#書き込み前に編集後オブジェクト情報を初期化
-                self.eyeR_ofter_pro_object=[]
-                for i in range(0,4):
-                    self.before_pro_object =  [ 
-                        drowing.KEYBOARD_BUTTON[i][0]+j*50-225, 
-                        drowing.KEYBOARD_BUTTON[i][1]+k*10+4, 
-                        #z方向にはさらに手のひらの深さも足す
-                        drowing.KEYBOARD_BUTTON[i][2]+k*50+5+self.palm_dipth_info
-                    ]
-                    self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
-                    self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-                if self.eyeL_ofter_pro_object:#描画距離外ならcontinue 起こるはずがないけど一応
-                    cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-                    cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-
-        self.eyeL_ofter_pro_object=[]
-        self.eyeR_ofter_pro_object=[]
-        for i in range(0,4):
-            self.before_pro_object = [
-                drowing.KEYBOARD_ENTER[i][0],
-                drowing.KEYBOARD_ENTER[i][1],
-                drowing.KEYBOARD_ENTER[i][2]+self.palm_dipth_info,
-            ]
-            self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
-            self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-        
-        if self.eyeL_ofter_pro_object:#描画距離内なら    
-            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-
-        self.eyeL_ofter_pro_object=[]
-        self.eyeR_ofter_pro_object=[]
-        for i in range(0,4):
-            self.before_pro_object = [ 
-                drowing.KEYBOARD_SPACE[i][0],
-                drowing.KEYBOARD_SPACE[i][1],
-                drowing.KEYBOARD_SPACE[i][2]+self.palm_dipth_info,
-            ]
-            self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
-            self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
-        cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-        cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-        if self.eyeL_ofter_pro_object:#描画距離内なら    
-            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
-
-        #with open("Obect_info/keyboard.json") as KEYBOARD_JSON:
-        #    key_position= np.array(KEYBOARD_JSON["key"])
+        with open("Object_info/keyboard.json") as KEYBOARD_JSON:
+            self.LOADED_KEYBOARD_JSON = json.load(KEYBOARD_JSON) #jsonとしてロード(読み込み)する必要あり
+            self.key_position = self.LOADED_KEYBOARD_JSON["key"]
+            for horolist in self.key_position:
+                for keybox_and_name in horolist:
+                    self.eyeL_ofter_pro_object=[]
+                    self.eyeR_ofter_pro_object=[]
+                    for keybox in keybox_and_name[0]:
+                        self.before_pro_object = [
+                            keybox[0],
+                            keybox[1],
+                            keybox[2]+self.palm_dipth_info,
+                        ]
+                        self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
+                        self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
+                    if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら
+                        cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)#drowing.KEYBOARD_BUTTON_COLOR)
+                        cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
             
+    def drowing_OBJ(self,path,magnification=[1,1,1],rotation=[1,1,1],translation=[0,0,0]):#mgnification:拡大 rotation:回転 taranslation:平行移動
+        obj_list=self.OBJ2List(path)
+        obj_pointS = obj_list[0]
+        for obj_point in obj_pointS:
+            obj_point = [ 
+                float(obj_point[0])*magnification[0] *rotation[0] +translation[0],
+                float(obj_point[1])*magnification[1] *rotation[1] +translation[1],
+                float(obj_point[2])*magnification[2] *rotation[2] +translation[2],
+            ]
+            cv2.circle(self.ImgLeft, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+            cv2.circle(self.ImgRight, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
 
     def drowing_3Dview(self,text_prehansig): #present handsign 現在のハンドサイン
             
@@ -140,5 +175,9 @@ class drowing:
             cv2.putText(self.ImgLeft,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
             cv2.putText(self.ImgRight,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
             
+        if text_prehansig == "shortcut_4":
+            if not "3Dobject" in self.current_mode:
+                self.current_mode.append("3Dobject")
+                self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10])
 
-        print("現在のハンドサインは",text_prehansig,"画像への書き込み完了\n")
+        #print("現在のハンドサインは",text_prehansig,"画像への書き込み完了\n")

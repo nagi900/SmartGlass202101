@@ -103,7 +103,7 @@ class HandTracking:
                     #ここでprin t (ins_jesture.result())などとしてins_jestureを呼び出してしまうと
                     # 次のdrowing_3 D viewが反応しなくなってしまうのでやらな い 
 
-                    ins_drowing . drowing_3Dview(ins_jesture.result())
+                    ins_drowing.drowing_3Dview(ins_jesture.result())
 
 
                     ##############################################
