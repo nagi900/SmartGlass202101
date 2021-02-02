@@ -8,7 +8,7 @@ class handsign_judge_1:
     def __init__(self,palm_width,max_angle):
         self.palm_width=palm_width#手のひらの横幅
         self.halfof_palm_width = palm_width / 2 #手のひらの横幅の半分
-        self.MSA=max_angle[0] #max_side_angle横方向の画角
+        self.MHA=max_angle[0] #max_horaizontal_angle横方向の画角
         self.MVA=max_angle[1] #max_vertical_angle縦方向の画角
 
         self.landmarks = {}
@@ -46,6 +46,10 @@ class handsign_judge_1:
         #palm_dipth
         self.palm_dipth_info=0.0
 
+        #rect_trans
+        self.rect_trans_magn = None
+        self.rect_trans_result = []
+
         #result
         self.result_info="a"
 
@@ -54,7 +58,7 @@ class handsign_judge_1:
         self.idx=idx
         #self.landmark=landmark
         self.landmark_x = -landmark_x+0.5 #カメラ映像中央をx=0とする 画面が鏡写しなので、値を反転
-        self.landmark_y = (landmark_y-0.5) - self.MSA/self.MVA
+        self.landmark_y = -(landmark_y-0.5) * self.MHA/self.MVA
         #カメラ映像中央をy=0とし、縦方向角度と単位をそろえる 下向きがyだったので、反転して上向きをyに
         self.landmark_z = landmark_z
         this_idx_position=[self.landmark_x,self.landmark_y,self.landmark_z]
@@ -132,10 +136,30 @@ class handsign_judge_1:
     #手のひらの横幅から手の距離を求める
     def palm_dipth(self):
         self.halfof_shwplmwid = self.abdis_3D(5,17) / 2 #5は人差し指の付け根 17は小指の付け根
-        self.halfof_shwplmwid_angle = self.MSA * self.halfof_shwplmwid #画角×画像の横幅に対して何倍か で手のひらの幅の角度の半分が求まる
+        self.halfof_shwplmwid_angle = self.MHA * self.halfof_shwplmwid #画角×画像の横幅に対して何倍か で手のひらの幅の角度の半分が求まる
         #z[mm] = 手のひらの横幅の半分[mm] / sin(手のひらの角度の半分)
         self.palm_dipth_info = self.halfof_palm_width / math.sin(self.halfof_shwplmwid_angle)
         return self.palm_dipth_info
+
+    #直交座標変換 rectangular coodinate transform
+    def rect_trans(self): 
+        #倍率を求める
+        self.rect_trans_magn = 2*self.halfof_palm_width / self.abdis_3D(5,17)#magnification
+        print("倍率は",self.rect_trans_magn)
+        self.rect_trans_result = [] #初期化
+        #手首のz座標をpalm_dipthとし、極座標を直交座標として扱っている 後で直す
+        for rect_trans_num in range(0,20):
+            self.rect_trans_result.append( [
+                self.landmarks[rect_trans_num][0]*self.rect_trans_magn,
+                self.landmarks[rect_trans_num][1]*self.rect_trans_magn,
+                self.landmarks[rect_trans_num][2]*self.rect_trans_magn + self.palm_dipth(),
+            ] )
+            print(rect_trans_num,"回目","\n","rect_trans_resultは",[
+                self.landmarks[rect_trans_num][0]*self.rect_trans_magn,
+                self.landmarks[rect_trans_num][1]*self.rect_trans_magn,
+                self.landmarks[rect_trans_num][2]*self.rect_trans_magn + self.palm_dipth(),
+            ])
+        return self.rect_trans_result
 
     #結果を返す これをメインで使う
     def result(self):
@@ -188,20 +212,3 @@ class handsign_judge_1:
                 self.result_info = "shortcut_4"
 
         return self.result_info
-
-    def test(self):
-        return self.landmarks
-
-#後で聞くこと　self.って毎回つけなきゃいけないの？　クラス変数じゃなくても？
-#使う関数は全部__init__に定義しなきゃいけないの？　初期化の役割もあるからそうかも
-#上の続き　一つの関数内でしか使わなければok？
-
-if __name__ == "__main__":#直接起動した場合テストする
-    print("テストします")
-    hoge1=handsign_judge_1()
-    hoge2=handsign_judge_1()
-    hoge1.setting(0,1.9,12.0,1234)
-    hoge1.setting(1,1.9,12.0,1234)
-    hoge2.setting(2,1.9,12.0,1234)
-    hoge2.setting(3,1.9,12.0,1234)
-    print(hoge1.test(),"\n",hoge2.test())

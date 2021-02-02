@@ -2,19 +2,13 @@ import cv2
 import numpy as np
 import json
 
-class drowing:
+class drowing:#モードの記述や画面クリアなどで、相対座標ではなく、絶対座標から指定してしまっている imgproccesingとか使って相対座標で描けるように
     FONT1 = cv2.FONT_HERSHEY_COMPLEX
     FONT2 = cv2.FONT_HERSHEY_COMPLEX_SMALL
-    CLEAR_COLOR = (255,255,255)
-
-    #あとで別ファイルにまとめたい
-    #キーボードの四角 原点をスペースキーの下部真ん中とする
+    CLEAR_COLOR = [255,255,255]
     KEYBOARD_BASE = [ [-250,50,250],[300,50,250],[300,0,0],[-250,0,0] ]
-    KEYBOARD_BUTTON = [ [-20,5,40],[20,5,40],[20,2,0],[-20,2,0] ] #ボタンの原点はボタンの下部真ん中
-    KEYBOARD_SPACE = [ [-50,5,40],[50,5,40],[50,2,0],[-50,2,0] ]
-    #enterはキーボード原点から 見ずらいから、隣のキーと1cm空ける
-    KEYBOARD_ENTER = [ [260,50,245],[300,50,245],[300,7,55],[260,7,55] ] 
-    KEYBOARD_COLOR = (0,0,0)
+
+    KEYBOARD_BASE_COLOR = [0,0,0]
     KEYBOARD_BUTTON_COLOR = [255,255,0]
 
 
@@ -37,7 +31,7 @@ class drowing:
         self.current_mode = []
 
         
-        #OBJ2List http://www.cloud.teu.ac.jp/public/MDF/toudouhk/blog/2015/01/15/OBJTips/
+        #OBJ2List 参考元 http://www.cloud.teu.ac.jp/public/MDF/toudouhk/blog/2015/01/15/OBJTips/
         self.numVertices = 0
         self.numUVs = 0
         self.numNormals = 0
@@ -53,8 +47,7 @@ class drowing:
         self.LOADED_KEYBOARD_JSON = None
         self.key_position = None
 
-
-    def img_reset(self,reset_range):
+    def img_reset(self,reset_range):#画面クリア
         if reset_range == "prehansig":
             #黒で画面全体をクリアする方法わかんなかったら、白の長方形で塗りつぶし
             cv2.rectangle(self.ImgRight,(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
@@ -65,6 +58,19 @@ class drowing:
             cv2.rectangle(self.ImgRight,(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
             cv2.rectangle(self.ImgLeft,(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
         
+        if reset_range == "object":
+            cv2.fillConvexPoly(self.ImgRight,np.array([
+                (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
+            ]),drowing.CLEAR_COLOR)
+            cv2.fillConvexPoly(self.ImgLeft,np.array([
+                (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
+            ]),drowing.CLEAR_COLOR)
+
+        if reset_range == "all":
+            cv2.rectangle(self.ImgRight,(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.ImgLeft,(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+        
+
         #objファイルをリストにする
     def OBJ2List(self,path):
         for line in open(path, "r"):
@@ -121,8 +127,8 @@ class drowing:
             self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
             self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
         if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら    
-            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_COLOR)
-            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_COLOR)
+            cv2.fillConvexPoly(self.ImgLeft,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
+            cv2.fillConvexPoly(self.ImgRight,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
 
         with open("Object_info/keyboard.json") as KEYBOARD_JSON:
             self.LOADED_KEYBOARD_JSON = json.load(KEYBOARD_JSON) #jsonとしてロード(読み込み)する必要あり
@@ -152,11 +158,21 @@ class drowing:
                 float(obj_point[1])*magnification[1] *rotation[1] +translation[1],
                 float(obj_point[2])*magnification[2] *rotation[2] +translation[2],
             ]
-            cv2.circle(self.ImgLeft, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
-            cv2.circle(self.ImgRight, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+            if ( self.img_pro_insname_L.point_processing(obj_point) ) and ( self.img_pro_insname_R.point_processing(obj_point) ): 
+                cv2.circle(self.ImgLeft, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+                cv2.circle(self.ImgRight, self.img_pro_insname_R.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(obj_point[2]*0.5), int(obj_point[2]*0.5) ))
 
-    def drowing_3Dview(self,text_prehansig): #present handsign 現在のハンドサイン
-            
+    def drowing_landmarks(self):
+        self.eyeL_ofter_pro_object=[]
+        self.eyeR_ofter_pro_object=[]
+        for transd_lndmrk in self.judge_instance.rect_trans():
+            if self.img_pro_insname_L.point_processing(transd_lndmrk) and self.img_pro_insname_R.point_processing(transd_lndmrk):#描画距離内なら
+                cv2.circle(self.ImgLeft, self.img_pro_insname_L.point_processing(transd_lndmrk) ,3,(255,0,0),2)
+                cv2.circle(self.ImgRight, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,(255,0,0),2)
+
+    def drowing_3Dview(self,text_prehansig,mode=None): #present handsign 現在のハンドサイン
+        if mode == "drowing hand":
+            self.img_reset("object")
         ##PIL型をopenCV型に変換 PIL型とは？
         #new_image = np.array(ImgLeft, dtype=np.uint8)
         #new_image = cv2.cvtColor(new_image, cv2.COLOR_RGB2BGR)
@@ -170,14 +186,19 @@ class drowing:
 
         if text_prehansig == "keyboard_open":
             if not "keyboard" in self.current_mode:
+                self.img_reset("current_mode")
                 self.current_mode.append("keyboard")
                 self.drowing_keyboard()
-            cv2.putText(self.ImgLeft,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
-            cv2.putText(self.ImgRight,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
+                cv2.putText(self.ImgLeft,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
+                cv2.putText(self.ImgRight,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
             
         if text_prehansig == "shortcut_4":
             if not "3Dobject" in self.current_mode:
+                self.img_reset("current_mode")
                 self.current_mode.append("3Dobject")
                 self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10])
+                cv2.putText(self.ImgLeft,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
+                cv2.putText(self.ImgRight,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
 
-        #print("現在のハンドサインは",text_prehansig,"画像への書き込み完了\n")
+        if mode == "drowing hand":
+            self.drowing_landmarks()
