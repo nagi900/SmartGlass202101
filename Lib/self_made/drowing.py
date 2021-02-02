@@ -111,7 +111,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         return self.vertices, self.uvs, self.normals, self.faceVertIDs, self.uvIDs, self.normalIDs, self.vertexColors
 
     def drowing_keyboard(self):
-        self.palm_dipth_info = self.judge_instance.palm_dipth() 
+        self.palm_dipth_info = self.judge_instance.palm_dipth()#rect_trans_info[0][2]と一緒だからこれ要らないかも
+        self.rect_trans_info = self.judge_instance.rect_trans()
         self.object_position_infos["keyboard"] = self.palm_dipth_info
         cv2.putText(self.ImgLeft,str(self.object_position_infos["keyboard"]),(0,40),drowing.FONT1,1,(0,0,0),2)
         cv2.putText(self.ImgRight,str(self.object_position_infos["keyboard"]),(0,40),drowing.FONT1,1,(0,0,0),2)
@@ -121,7 +122,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         for i in range(0,4):
             self.before_pro_object=[
                 drowing.KEYBOARD_BASE[i][0], 
-                drowing.KEYBOARD_BASE[i][1], 
+                drowing.KEYBOARD_BASE[i][1]+self.rect_trans_info[0][1], 
                 drowing.KEYBOARD_BASE[i][2]+self.palm_dipth_info
             ]
             self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
@@ -140,7 +141,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                     for keybox in keybox_and_name[0]:
                         self.before_pro_object = [
                             keybox[0],
-                            keybox[1],
+                            keybox[1]+self.rect_trans_info[0][1],
                             keybox[2]+self.palm_dipth_info,
                         ]
                         self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
