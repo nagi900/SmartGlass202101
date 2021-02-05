@@ -145,7 +145,6 @@ class handsign_judge_1:
     def rect_trans(self): 
         #倍率を求める
         self.rect_trans_magn = 2*self.halfof_palm_width / self.abdis_3D(5,17)#magnification
-        print("倍率は",self.rect_trans_magn)
         self.rect_trans_result = [] #初期化
         #手首のz座標をpalm_dipthとし、極座標を直交座標として扱っている 後で直す
         for rect_trans_num in range(0,20):
@@ -154,11 +153,6 @@ class handsign_judge_1:
                 self.landmarks[rect_trans_num][1]*self.rect_trans_magn,
                 self.landmarks[rect_trans_num][2]*self.rect_trans_magn + self.palm_dipth(),
             ] )
-            print(rect_trans_num,"回目","\n","rect_trans_resultは",[
-                self.landmarks[rect_trans_num][0]*self.rect_trans_magn,
-                self.landmarks[rect_trans_num][1]*self.rect_trans_magn,
-                self.landmarks[rect_trans_num][2]*self.rect_trans_magn + self.palm_dipth(),
-            ])
         return self.rect_trans_result
 
     #結果を返す これをメインで使う
