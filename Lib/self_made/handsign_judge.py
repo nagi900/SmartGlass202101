@@ -49,6 +49,9 @@ class handsign_judge_1:
         #rect_trans
         self.rect_trans_magn = None
         self.rect_trans_result = []
+        
+        #keyboard_typing
+        self.finger_vec = []
 
         #result
         self.result_info="a"
@@ -133,6 +136,34 @@ class handsign_judge_1:
         )
         return self.abdis2D_result
 
+    #指の関節と関節のベクトル 後でhandsignに移動
+    def fin_vec_equation(self,joint_num=None,step=1):#equation:方程式 joint_num:第何関節から step:何関節飛びにか
+        self.fin_vec_equ_result = []#返り値初期化
+        for fin_num in range(joint_num,21,4):#親指から
+            self.finger_vec =[
+                self.rect_trans()[fin_num][0] - self.rect_trans()[fin_num+step][0],
+                self.rect_trans()[fin_num][1] - self.rect_trans()[fin_num+step][1],
+                self.rect_trans()[fin_num][2] - self.rect_trans()[fin_num+step][2],
+            ]
+            #方向ベクトル(a,b,c)において
+            #(x-x0)/a = (y-y0)/b = (z-z0)/c より
+            #bx-ay = bx0-ay0 と cy-bz = cy0-bz0 が成り立つ
+            #[[b,-a,0]    [x,    [bx0-ay0,
+            # [0,c,-b]] ・ y,  =  cy0-bz0]
+            #              z]
+            
+            self.fin_vec_equ_result.append([
+                [
+                    [self.finger_vec[1],-1*self.finger_vec[0],0],
+                    [0,self.finger_vec[2],-1*self.finger_vec[1]],
+                ],
+                [
+                    self.finger_vec[1]*self.rect_trans()[fin_num][0] - self.finger_vec[0]*self.rect_trans()[fin_num][1],
+                    self.finger_vec[2]*self.rect_trans()[fin_num][2] - self.finger_vec[1]*self.rect_trans()[fin_num][2],
+                ]
+            ])
+        return self.fin_vec_equ_result
+
     #手のひらの横幅から手の距離を求める
     def palm_dipth(self):
         self.halfof_shwplmwid = self.abdis_3D(5,17) / 2 #5は人差し指の付け根 17は小指の付け根
@@ -147,7 +178,7 @@ class handsign_judge_1:
         self.rect_trans_magn = 2*self.halfof_palm_width / self.abdis_3D(5,17)#magnification
         self.rect_trans_result = [] #初期化
         #手首のz座標をpalm_dipthとし、極座標を直交座標として扱っている 後で直す
-        for rect_trans_num in range(0,20):
+        for rect_trans_num in range(0,21):
             self.rect_trans_result.append( [
                 self.landmarks[rect_trans_num][0]*self.rect_trans_magn,
                 self.landmarks[rect_trans_num][1]*self.rect_trans_magn,

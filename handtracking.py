@@ -11,7 +11,9 @@ from Lib.self_made import (
                             )
 
 class HandTracking:
-    def run():
+    def __init__(self):
+        pass
+    def run(self):#selfつけないと外から動かない
         mp_drawing = mp.solutions.drawing_utils
         mp_hands = mp.solutions.hands
 
@@ -48,19 +50,43 @@ class HandTracking:
         cv2.namedWindow(ACTWIN_R_NAME) 
 
         #左右のディスプレイに表示する真っ白の画像を生成
-        WHITE_IMG = np.full((ACTWIN_PXL_WIDTH,ACTWIN_PXL_HIGHT,3),255)
-        IMG_LEFT_NAME = 'ImgLeft.png'
-        IMG_RIGHT_NAME = 'ImgRight.png'
-        cv2.imwrite(IMG_LEFT_NAME,WHITE_IMG)
-        cv2.imwrite(IMG_RIGHT_NAME,WHITE_IMG)
-        ImgLeft = cv2.imread(IMG_LEFT_NAME)
-        ImgRight = cv2.imread(IMG_RIGHT_NAME)
-        #ここにアクティブウィンドウのスクショの画像を表示するやつを書く
+        WHITE_IMG = np.full((ACTWIN_PXL_WIDTH,ACTWIN_PXL_HIGHT,4),255)
+        IMG_LEFT_LAYER_0 = 'Image_layer/ImgLeft_0.png'
+        IMG_RIGHT_LAYER_0 = 'Image_layer/ImgRight_0.png'
+        cv2.imwrite(IMG_LEFT_LAYER_0,WHITE_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_0,WHITE_IMG)
+        ImgLeft = cv2.imread(IMG_LEFT_LAYER_0)#これをベースにしてレイヤーを合成する
+        ImgRight = cv2.imread(IMG_RIGHT_LAYER_0)#これをベースにする
+        
+        #合成するレイヤー
+        IMG_LEFT_LAYER_1 = 'Image_layer/ImgLeft_1.png'
+        IMG_RIGHT_LAYER_1 = 'Image_layer/ImgRight_1.png'
+        cv2.imwrite(IMG_LEFT_LAYER_1,WHITE_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_1,WHITE_IMG)
+        ImgLeft_1 = cv2.imread(IMG_LEFT_LAYER_1)
+        ImgRight_1 = cv2.imread(IMG_RIGHT_LAYER_1)
+
+        IMG_LEFT_LAYER_2 = 'Image_layer/ImgLeft_2.png'
+        IMG_RIGHT_LAYER_2 = 'Image_layer/ImgRight_2.png'
+        cv2.imwrite(IMG_LEFT_LAYER_2,WHITE_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_2,WHITE_IMG)
+        ImgLeft_2 = cv2.imread(IMG_LEFT_LAYER_2)
+        ImgRight_2 = cv2.imread(IMG_RIGHT_LAYER_2)
+
+        IMG_LEFT_LAYER_3 = 'Image_layer/ImgLeft_3.png'
+        IMG_RIGHT_LAYER_3 = 'Image_layer/ImgRight_3.png'
+        cv2.imwrite(IMG_LEFT_LAYER_3,WHITE_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_3,WHITE_IMG)
+        ImgLeft_3 = cv2.imread(IMG_LEFT_LAYER_3)
+        ImgRight_3 = cv2.imread(IMG_RIGHT_LAYER_3)
+        
+        LeftLayers = [ImgLeft,ImgLeft_1,ImgLeft_2,ImgLeft_3]
+        RightLayers = [ImgRight,ImgRight_1,ImgRight_2,ImgRight_3]
 
         ins_jesture = handsign_judge.handsign_judge_1(PALM_WIDTH, (MAX_CAMERA_SIDE_ANGLE,MAX_CAMERA_VERTICAL_ANGLE))#先にこっち
         lefteye_process = img_processing.plr_trns(VERTEX_DISTANCE, (DISPLAY_WIDTH,DISPLAY_HIGHT) , (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), -PUPILLARY_DISTANCE/2)
         righteye_process = img_processing.plr_trns(VERTEX_DISTANCE, (DISPLAY_WIDTH,DISPLAY_HIGHT) , (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), PUPILLARY_DISTANCE/2)
-        ins_drowing = drowing.drowing(ImgLeft, ImgRight, ins_jesture, lefteye_process, righteye_process)#インスタンスも引き数にできる
+        ins_drowing = drowing.drowing(LeftLayers, RightLayers, ins_jesture, lefteye_process, righteye_process)#インスタンスも引き数にできる
         ########################################
 
 
@@ -103,7 +129,7 @@ class HandTracking:
                     #ここでprin t (ins_jesture.result())などとしてins_jestureを呼び出してしまうと
                     # 次のdrowing_3 D viewが反応しなくなってしまうのでやらな い 
 
-                    ins_drowing.drowing_3Dview(ins_jesture.result())#手のひらの表示をする場合は第二引き数に"drow_hand"を
+                    ins_drowing.drowing_3Dview(ins_jesture.result(),"drowing_hand")#手のひらの表示をする場合は第二引き数に"drowing_hand"を
 
 
                     ##############################################
@@ -120,4 +146,4 @@ class HandTracking:
         #out.release()#オリジナル　録画
 
 if __name__=="__main__":
-    HandTracking.run()
+    HandTracking().run()

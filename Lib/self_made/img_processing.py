@@ -57,14 +57,5 @@ class plr_trns: #polar transformation
             * self.window_pix_hight
             + self.window_pix_hight /2 
         )
-
-        #print(
-        #    "\n\nimg_processingログ",
-        #    "\n移動前の座標",original_position,
-        #    "\n横に何度/横方向最大表示角度",math.atan(self.slided_position_x / original_position[2]) / self.max_display_angle_x,
-        #    "\n縦に何度/縦方向最大表示角度",math.atan(self.slided_position_y / original_position[2]) /self.max_display_angle_y,
-        #    "\n移動後の座標",int(self.object_coordinate_x),int(self.object_coordinate_y)
-        #)
-
         return int(self.object_coordinate_x),int(self.object_coordinate_y)
         #intにしないとcv2で描画できない
