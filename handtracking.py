@@ -50,7 +50,8 @@ class HandTracking:
         cv2.namedWindow(ACTWIN_R_NAME) 
 
         #左右のディスプレイに表示する真っ白の画像を生成
-        WHITE_IMG = np.full((ACTWIN_PXL_WIDTH,ACTWIN_PXL_HIGHT,4),255)
+        WHITE_IMG = np.full((ACTWIN_PXL_WIDTH,ACTWIN_PXL_HIGHT,3),255)
+        ALPHA_IMG = np.insert(WHITE_IMG,3,0,axis=2)
         IMG_LEFT_LAYER_0 = 'Image_layer/ImgLeft_0.png'
         IMG_RIGHT_LAYER_0 = 'Image_layer/ImgRight_0.png'
         cv2.imwrite(IMG_LEFT_LAYER_0,WHITE_IMG)
@@ -61,22 +62,22 @@ class HandTracking:
         #合成するレイヤー
         IMG_LEFT_LAYER_1 = 'Image_layer/ImgLeft_1.png'
         IMG_RIGHT_LAYER_1 = 'Image_layer/ImgRight_1.png'
-        cv2.imwrite(IMG_LEFT_LAYER_1,WHITE_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_1,WHITE_IMG)
+        cv2.imwrite(IMG_LEFT_LAYER_1,ALPHA_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_1,ALPHA_IMG)
         ImgLeft_1 = cv2.imread(IMG_LEFT_LAYER_1)
         ImgRight_1 = cv2.imread(IMG_RIGHT_LAYER_1)
 
         IMG_LEFT_LAYER_2 = 'Image_layer/ImgLeft_2.png'
         IMG_RIGHT_LAYER_2 = 'Image_layer/ImgRight_2.png'
-        cv2.imwrite(IMG_LEFT_LAYER_2,WHITE_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_2,WHITE_IMG)
+        cv2.imwrite(IMG_LEFT_LAYER_2,ALPHA_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_2,ALPHA_IMG)
         ImgLeft_2 = cv2.imread(IMG_LEFT_LAYER_2)
         ImgRight_2 = cv2.imread(IMG_RIGHT_LAYER_2)
 
         IMG_LEFT_LAYER_3 = 'Image_layer/ImgLeft_3.png'
         IMG_RIGHT_LAYER_3 = 'Image_layer/ImgRight_3.png'
-        cv2.imwrite(IMG_LEFT_LAYER_3,WHITE_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_3,WHITE_IMG)
+        cv2.imwrite(IMG_LEFT_LAYER_3,ALPHA_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_3,ALPHA_IMG)
         ImgLeft_3 = cv2.imread(IMG_LEFT_LAYER_3)
         ImgRight_3 = cv2.imread(IMG_RIGHT_LAYER_3)
         
@@ -138,6 +139,7 @@ class HandTracking:
             cv2.imshow('MediaPipe Hands', image)
             cv2.imshow(ACTWIN_L_NAME,ImgLeft) #winname(ここではACTWIN_L_NAME)にmat(ここではImgLeft)を表示
             cv2.imshow(ACTWIN_R_NAME,ImgRight)
+            cv2.imwrite(IMG_LEFT_LAYER_0,ImgLeft)#画像として保存するならこうするしかない
             if cv2.waitKey(5) & 0xFF == 27:
                 break
         hands.close()

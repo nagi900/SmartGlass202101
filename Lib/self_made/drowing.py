@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import json
 import math
+import traceback
+from PIL import Image
 
 class drowing:#モードの記述や画面クリアなどで、相対座標ではなく、絶対座標から指定してしまっている imgproccesingとか使って相対座標で描けるように
     FONT1 = cv2.FONT_HERSHEY_COMPLEX
@@ -66,28 +68,43 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.hand_landmarks_color=(255,0,0)
         
 
-    def img_reset(self,reset_range):#画面クリア
+    def img_reset(self,layer_name,reset_range):#画面クリア
+        if layer_name == "object":
+            self.img_reset_layer = [self.ImgLeft_Object,self.ImgRight_Object]
+        elif layer_name == "mode":
+            self.img_reset_layer = [self.ImgLeft_Mode,self.ImgRight_Mode]
+        elif layer_name == "hand":
+            self.img_reset_layer = [self.ImgLeft_Hand,self.ImgRight_Hand]
+        elif layer_name == "keyboard":
+            self.img_reset_layer = [self.ImgLeft_Keyboard,self.ImgRight_Keyboard]
+        else:
+            try:
+                raise Exception
+            except:
+                traceback.print_exc()
+                print("リセットする画像が正しく指定されていません")
+
         if reset_range == "prehansig":
             #黒で画面全体をクリアする方法わかんなかったら、白の長方形で塗りつぶし
-            cv2.rectangle(self.ImgRight_Mode,(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
-            cv2.rectangle(self.ImgLeft_Mode,(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.img_reset_layer[0],(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.img_reset_layer[1],(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
             
         if reset_range == "current_mode":
             #黒で画面全体をクリアする方法わかんなかったら、白の長方形で塗りつぶし
-            cv2.rectangle(self.ImgRight_Mode,(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
-            cv2.rectangle(self.ImgLeft_Mode,(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.img_reset_layer[0],(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.img_reset_layer[1],(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
         
         if reset_range == "object":
-            cv2.fillConvexPoly(self.ImgRight_Mode,np.array([
+            cv2.fillConvexPoly(self.img_reset_layer[0],np.array([
                 (0,0),(200,0),(200,50),(200,100),(500,100),(500,500),(0,500)
             ]),drowing.CLEAR_COLOR)
-            cv2.fillConvexPoly(self.ImgLeft_Mode,np.array([
+            cv2.fillConvexPoly(self.img_reset_layer[1],np.array([
                 (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
             ]),drowing.CLEAR_COLOR)
 
         if reset_range == "all":
-            cv2.rectangle(self.ImgRight_Mode,(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
-            cv2.rectangle(self.ImgLeft_Mode,(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.img_reset_layer[0],(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+            cv2.rectangle(self.img_reset_layer[1],(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
         
 
         #objファイルをリストにする
@@ -151,8 +168,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
             self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
             self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
         if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら    
-            cv2.fillConvexPoly(self.ImgLeft_Mode,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
-            cv2.fillConvexPoly(self.ImgRight_Mode,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
+            cv2.fillConvexPoly(self.ImgLeft_Keyboard,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
+            cv2.fillConvexPoly(self.ImgRight_Keyboard,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
 
         with open("Object_info/keyboard.json") as KEYBOARD_JSON:
             self.LOADED_KEYBOARD_JSON = json.load(KEYBOARD_JSON) #jsonとしてロード(読み込み)する必要あり
@@ -172,8 +189,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
                         self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
                     if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら
-                        cv2.fillConvexPoly(self.ImgLeft_Mode,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)#drowing.KEYBOARD_BUTTON_COLOR)
-                        cv2.fillConvexPoly(self.ImgRight_Mode,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
+                        cv2.fillConvexPoly(self.ImgLeft_Keyboard,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)#drowing.KEYBOARD_BUTTON_COLOR)
+                        cv2.fillConvexPoly(self.ImgRight_Keyboard,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
 
                     self.slided_key_positions_ver.append([self.slided_key_position_keyrect,keybox_and_name[1]])#ずらしたキーボードの座標と名前を記録
                 self.slided_key_positions.append(self.slided_key_positions_ver)
@@ -223,13 +240,15 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         self.judge_instance.rect_trans()[(k+1)*4-2][2] < self.slided_key_positions[4][0][0][0][2] and self.judge_instance.rect_trans()[(k+1)*4][2] > self.slided_key_positions[0][0][0][0][2]  and 
                         self.judge_instance.rect_trans()[(k+1)*4-2][0] < self.slided_key_positions[1][9][0][0][0] and self.judge_instance.rect_trans()[(k+1)*4][0] > self.slided_key_positions[1][0][0][0][0]
                     ):
-                        print("指",k,"キーボードの範囲内には入ってる")
+                        #print("指",k,"キーボードの範囲内には入ってる")
+                        pass
                     else:
-                        print(
-                            #"指",k,"の位置は",self.judge_instance.rect_trans()[(k+1)*4-2],self.judge_instance.rect_trans()[(k+1)*4],
-                            "指",k,"key",self.slided_key_positions[i][j][1],"打ってない 交点は",self.cross_point[0,0],self.cross_point[1,0],self.cross_point[2,0]
-                        )
-                    cv2.circle(self.ImgLeft_Mode, self.img_pro_insname_L.point_processing([
+                        #print(
+                        #    #"指",k,"の位置は",self.judge_instance.rect_trans()[(k+1)*4-2],self.judge_instance.rect_trans()[(k+1)*4],
+                        #    "指",k,"key",self.slided_key_positions[i][j][1],"打ってない 交点は",self.cross_point[0,0],self.cross_point[1,0],self.cross_point[2,0]
+                        #)
+                        pass
+                    cv2.circle(self.ImgLeft_Keyboard, self.img_pro_insname_L.point_processing([
                         self.cross_point[0,0],self.cross_point[1,0],self.cross_point[2,0]
                     ]),10,(0,0,0))#交点を黒で表示
 
@@ -244,8 +263,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 float(obj_point[2])*magnification[2] *rotation[2] +translation[2],
             ]
             if ( self.img_pro_insname_L.point_processing(obj_point) ) and ( self.img_pro_insname_R.point_processing(obj_point) ): 
-                cv2.circle(self.ImgLeft_Mode, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(255-obj_point[2]*0.5), int(obj_point[2]*0.5) ))
-                cv2.circle(self.ImgRight_Mode, self.img_pro_insname_R.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(255-obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+                cv2.circle(self.ImgLeft_Object, self.img_pro_insname_L.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(255-obj_point[2]*0.5), int(obj_point[2]*0.5) ))
+                cv2.circle(self.ImgRight_Object, self.img_pro_insname_R.point_processing(obj_point) ,1,(int(obj_point[2]*0.5),int(255-obj_point[2]*0.5), int(obj_point[2]*0.5) ))
 
     #手を書く 現時点では点のみ
     def drowing_hand_landmarks(self):
@@ -253,16 +272,16 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.eyeR_ofter_pro_object=[]
         for transd_lndmrk in self.judge_instance.rect_trans():
             if self.img_pro_insname_L.point_processing(transd_lndmrk) and self.img_pro_insname_R.point_processing(transd_lndmrk):#描画距離内なら
-                cv2.circle(self.ImgLeft_Mode, self.img_pro_insname_L.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
-                cv2.circle(self.ImgRight_Mode, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
+                cv2.circle(self.ImgLeft_Hand, self.img_pro_insname_L.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
+                cv2.circle(self.ImgRight_Hand, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
 
     def drowing_3Dview(self,text_prehansig,mode=None): #present handsign 現在のハンドサイン
         if mode == "drowing_hand":
-            self.img_reset("object")
+            self.img_reset("hand","all")
             self.drowing_hand_landmarks()
 
         if self.text_prehansig_backup != text_prehansig: #1つ前のtext_prehansigと違うなら
-            self.img_reset("prehansig")
+            self.img_reset("mode","prehansig")
             self.text_prehansig_backup = text_prehansig
 
             cv2.putText(self.ImgLeft_Mode,text_prehansig,(200,40),drowing.FONT1,1,(0,0,0),2)
@@ -270,7 +289,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
 
         if text_prehansig == "keyboard_open":
             if not "keyboard" in self.current_mode:
-                self.img_reset("current_mode")
+                self.img_reset("mode","current_mode")
                 self.current_mode.append("keyboard")
                 self.drowing_keyboard()
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
@@ -296,17 +315,12 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         #        cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
 
         if text_prehansig == "3D_tranceform" and "3Dobject" in self.current_mode:
-                self.img_reset("current_mode")
-                self.img_reset("object")
+                self.img_reset("mode","current_mode")
+                self.img_reset("object","all")
                 self.current_mode.append("3Dobject")
                 self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],self.judge_instance.midfin_vec(),[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
 
-        self.ImgLeft_Hand=cv2.addWeighted(self.ImgLeft_Hand,1,self.ImgLeft_Keyboard,1,0)
-        self.ImgLeft_Object=cv2.addWeighted(self.ImgLeft_Object,1,self.ImgLeft_Mode,1,0)
-        self.ImgLeft_Object=cv2.addWeighted(self.ImgLeft_Object,1,self.ImgLeft_Hand,1,0)
 
-        self.ImgRight_Hand=cv2.addWeighted(self.ImgRight_Hand,1,self.ImgRight_Keyboard,1,0)
-        self.ImgRight_Object=cv2.addWeighted(self.ImgRight_Object,1,self.ImgRight_Mode,1,0)
-        self.ImgRight_Object=cv2.addWeighted(self.ImgRight_Object,1,self.ImgRight_Hand,1,0)
+        
