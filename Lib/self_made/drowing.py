@@ -8,20 +8,21 @@ from PIL import Image
 class drowing:#モードの記述や画面クリアなどで、相対座標ではなく、絶対座標から指定してしまっている imgproccesingとか使って相対座標で描けるように
     FONT1 = cv2.FONT_HERSHEY_COMPLEX
     FONT2 = cv2.FONT_HERSHEY_COMPLEX_SMALL
-    CLEAR_COLOR = [255,255,255]
+    FONT_COLOR = [0,0,0,255]
+    CLEAR_COLOR = [255,255,255,255]
+    ALPHA_COLOR = [0,0,0,0]
     KEYBOARD_BASE = [ [-250,50,250],[300,50,250],[300,0,0],[-250,0,0] ]
-
-    KEYBOARD_BASE_COLOR = [0,0,0]
-    KEYBOARD_BUTTON_COLOR = [255,255,0]
+    KEYBOARD_BASE_COLOR = [0,0,0,255]
+    KEYBOARD_BUTTON_COLOR = [255,255,0,255]
 
 
     def __init__(self,Leftlayers=None,Rightlayers=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None):
         self.ImgLeft_Object = Leftlayers[0]
         self.ImgRight_Object = Rightlayers[0]
-        self.ImgLeft_Mode = Leftlayers[0]#cv2で扱える形にしたもの？
-        self.ImgRight_Mode = Rightlayers[0]
-        self.ImgLeft_Hand = Leftlayers[1]
-        self.ImgRight_Hand = Rightlayers[1]
+        self.ImgLeft_Mode = Leftlayers[1]
+        self.ImgRight_Mode = Rightlayers[1]
+        self.ImgLeft_Hand = Leftlayers[2]
+        self.ImgRight_Hand = Rightlayers[2]
         self.ImgLeft_Keyboard = Leftlayers[3]
         self.ImgRight_Keyboard = Rightlayers[3]
 
@@ -65,46 +66,57 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         
 
         #drowing_hand
-        self.hand_landmarks_color=(255,0,0)
+        self.hand_landmarks_color=[255,0,0,255]
         
 
     def img_reset(self,layer_name,reset_range):#画面クリア
         if layer_name == "object":
             self.img_reset_layer = [self.ImgLeft_Object,self.ImgRight_Object]
-        elif layer_name == "mode":
-            self.img_reset_layer = [self.ImgLeft_Mode,self.ImgRight_Mode]
-        elif layer_name == "hand":
-            self.img_reset_layer = [self.ImgLeft_Hand,self.ImgRight_Hand]
-        elif layer_name == "keyboard":
-            self.img_reset_layer = [self.ImgLeft_Keyboard,self.ImgRight_Keyboard]
-        else:
-            try:
-                raise Exception
-            except:
-                traceback.print_exc()
-                print("リセットする画像が正しく指定されていません")
+            if reset_range == "object":
+                cv2.fillConvexPoly(self.img_reset_layer[0],np.array([
+                    (0,0),(200,0),(200,50),(200,100),(500,100),(500,500),(0,500)
+                ]),drowing.CLEAR_COLOR)
+                cv2.fillConvexPoly(self.img_reset_layer[1],np.array([
+                    (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
+                ]),drowing.CLEAR_COLOR)
+            if reset_range == "all":
+                cv2.rectangle(self.img_reset_layer[0],(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+                cv2.rectangle(self.img_reset_layer[1],(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+                
+        else:#objectでなければ透明で塗りつぶし
+            if layer_name == "mode":
+                self.img_reset_layer = [self.ImgLeft_Mode,self.ImgRight_Mode]
+            elif layer_name == "hand":
+                self.img_reset_layer = [self.ImgLeft_Hand,self.ImgRight_Hand]
+            elif layer_name == "keyboard":
+                self.img_reset_layer = [self.ImgLeft_Keyboard,self.ImgRight_Keyboard]
+            else:
+                try:
+                    raise Exception
+                except:
+                    traceback.print_exc()
+                    print("リセットする画像が正しく指定されていません")
 
-        if reset_range == "prehansig":
-            #黒で画面全体をクリアする方法わかんなかったら、白の長方形で塗りつぶし
-            cv2.rectangle(self.img_reset_layer[0],(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
-            cv2.rectangle(self.img_reset_layer[1],(200,0),(500,50),drowing.CLEAR_COLOR,thickness=-1)
+            if reset_range == "prehansig":
+                #透明の長方形で塗りつぶし
+                cv2.rectangle(self.img_reset_layer[0],(200,0),(500,50),drowing.ALPHA_COLOR,thickness=-1)
+                cv2.rectangle(self.img_reset_layer[1],(200,0),(500,50),drowing.ALPHA_COLOR,thickness=-1)
+                
+            if reset_range == "current_mode":
+                cv2.rectangle(self.img_reset_layer[0],(200,50),(500,100),drowing.ALPHA_COLOR,thickness=-1)
+                cv2.rectangle(self.img_reset_layer[1],(200,50),(500,100),drowing.ALPHA_COLOR,thickness=-1)
             
-        if reset_range == "current_mode":
-            #黒で画面全体をクリアする方法わかんなかったら、白の長方形で塗りつぶし
-            cv2.rectangle(self.img_reset_layer[0],(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
-            cv2.rectangle(self.img_reset_layer[1],(200,50),(500,100),drowing.CLEAR_COLOR,thickness=-1)
-        
-        if reset_range == "object":
-            cv2.fillConvexPoly(self.img_reset_layer[0],np.array([
-                (0,0),(200,0),(200,50),(200,100),(500,100),(500,500),(0,500)
-            ]),drowing.CLEAR_COLOR)
-            cv2.fillConvexPoly(self.img_reset_layer[1],np.array([
-                (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
-            ]),drowing.CLEAR_COLOR)
+            if reset_range == "object":
+                cv2.fillConvexPoly(self.img_reset_layer[0],np.array([
+                    (0,0),(200,0),(200,50),(200,100),(500,100),(500,500),(0,500)
+                ]),drowing.ALPHA_COLOR)
+                cv2.fillConvexPoly(self.img_reset_layer[1],np.array([
+                    (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
+                ]),drowing.ALPHA_COLOR)
 
-        if reset_range == "all":
-            cv2.rectangle(self.img_reset_layer[0],(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
-            cv2.rectangle(self.img_reset_layer[1],(0,0),(500,500),drowing.CLEAR_COLOR,thickness=-1)
+            if reset_range == "all":
+                cv2.rectangle(self.img_reset_layer[0],(0,0),(500,500),drowing.ALPHA_COLOR,thickness=-1)
+                cv2.rectangle(self.img_reset_layer[1],(0,0),(500,500),drowing.ALPHA_COLOR,thickness=-1)
         
 
         #objファイルをリストにする
@@ -276,6 +288,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 cv2.circle(self.ImgRight_Hand, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
 
     def drowing_3Dview(self,text_prehansig,mode=None): #present handsign 現在のハンドサイン
+        self.img_reset("object","all")#オブジェクトレイヤーをリセットするんじゃなく、ベースレイヤーを作った方がいい気がする
+
         if mode == "drowing_hand":
             self.img_reset("hand","all")
             self.drowing_hand_landmarks()
@@ -283,17 +297,16 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         if self.text_prehansig_backup != text_prehansig: #1つ前のtext_prehansigと違うなら
             self.img_reset("mode","prehansig")
             self.text_prehansig_backup = text_prehansig
-
-            cv2.putText(self.ImgLeft_Mode,text_prehansig,(200,40),drowing.FONT1,1,(0,0,0),2)
-            cv2.putText(self.ImgRight_Mode,text_prehansig,(200,40),drowing.FONT1,1,(0,0,0),2)
+            cv2.putText(self.ImgLeft_Mode,text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
+            cv2.putText(self.ImgRight_Mode,text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
 
         if text_prehansig == "keyboard_open":
             if not "keyboard" in self.current_mode:
                 self.img_reset("mode","current_mode")
                 self.current_mode.append("keyboard")
                 self.drowing_keyboard()
-                cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
-                cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
+                cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
+                cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
         
         if (
             "keyboard" in self.current_mode and#keyboardが存在して keyboardのspacekeyの座標より上下5cm,手前10cm、zkeyの左から/keyの右まで　なら
@@ -301,26 +314,22 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
             self.judge_instance.rect_trans()[0][2] < self.slided_key_positions[0][0][0][0][2] and self.judge_instance.rect_trans()[0][2] > self.slided_key_positions[0][0][0][0][2]-100  and 
             self.judge_instance.rect_trans()[0][0] < self.slided_key_positions[1][9][0][0][0] and self.judge_instance.rect_trans()[0][0] > self.slided_key_positions[1][0][0][0][0]
         ):
-            self.hand_landmarks_color=(0,0,255)#手の色を変える
+            self.hand_landmarks_color=[0,0,255,255]#手の色を変える
             self.keybaord_typing()
         else:
-            self.hand_landmarks_color=(255,0,0)
+            self.hand_landmarks_color=[255,0,0,255]
             
         #if text_prehansig == "shortcut_4":
         #    if not "3Dobject" in self.current_mode:
         #        self.img_reset("current_mode")
         #        self.current_mode.append("3Dobject")#キーボード消えちゃうからとりあえず画面消去はしない
         #        self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],translation=[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
-        #        cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
-        #        cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
+        #        cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
+        #        cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
 
         if text_prehansig == "3D_tranceform" and "3Dobject" in self.current_mode:
-                self.img_reset("mode","current_mode")
-                self.img_reset("object","all")
+                self.img_reset("mode","all")
                 self.current_mode.append("3Dobject")
                 self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],self.judge_instance.midfin_vec(),[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
-                cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
-                cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,(0,155,0),2)
-
-
-        
+                cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
+                cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
