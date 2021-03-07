@@ -4,9 +4,16 @@ SmartGlassWidget:
     BoxLayout:
         orientation: "vertical"
         size: root.size
-        Image:
-            #source: app.main_ImgLeft
+        BoxLayout:
+            Image:
+                sourece: "../../line_chatbot\notebooks\img\thumbnail\calender.png"
+                allow_stretch: True
+            Image:
+                sourece: root.image_R_src
+                allow_stretch: True
+                
         Button:
+            size_hint_y:0.2
             text:"Start App"
             color: 1,0.5,0,1
             on_press: root.StartbuttonClicked()

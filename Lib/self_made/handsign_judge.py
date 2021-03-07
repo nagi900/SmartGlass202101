@@ -196,7 +196,7 @@ class handsign_judge_1:
             self.result_info = "3D_tranceform"
 
         elif self.FrontorBack() == "reverse":
-            if self.FingerRaising() == {'5': 1, '9': 1, '13': -1, '17': -1}:
+            if self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': -1}:
                 self.result_info = "choice_mode_move"
             elif self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': 1}:
                 self.result_info = "choice_mode_cleck"

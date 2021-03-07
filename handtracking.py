@@ -89,7 +89,7 @@ class HandTracking:
         ins_jesture = handsign_judge.handsign_judge_1(PALM_WIDTH, (MAX_CAMERA_SIDE_ANGLE,MAX_CAMERA_VERTICAL_ANGLE))#先にこっち
         lefteye_process = img_processing.plr_trns(VERTEX_DISTANCE, (DISPLAY_WIDTH,DISPLAY_HIGHT) , (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), -PUPILLARY_DISTANCE/2)
         righteye_process = img_processing.plr_trns(VERTEX_DISTANCE, (DISPLAY_WIDTH,DISPLAY_HIGHT) , (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), PUPILLARY_DISTANCE/2)
-        ins_drowing = drowing.drowing(LeftLayers, RightLayers, ins_jesture, lefteye_process, righteye_process)#インスタンスも引き数にできる
+        ins_drowing = drowing.drowing(LeftLayers, RightLayers, ins_jesture, lefteye_process, righteye_process, (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH))#インスタンスも引き数にできる
         ########################################
 
 
@@ -114,7 +114,7 @@ class HandTracking:
             if results.multi_hand_landmarks:
                 
                 for hand_landmarks in results.multi_hand_landmarks:
-                    mp_drawing.draw_landmarks( #これで画像に書き込んでる
+                    mp_drawing.draw_landmarks( #これで画像に書き込んでる cv2を使っている
                         image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
 
@@ -139,7 +139,7 @@ class HandTracking:
 
             
             #保存
-            cv2.imwrite(IMG_LEFT_LAYER_0,ImgLeft)#画像として保存するならこうするしかない
+            cv2.imwrite(IMG_LEFT_LAYER_0,ImgLeft)#merge後のlayer0の保存は一週遅れる
             cv2.imwrite(IMG_RIGHT_LAYER_0,ImgRight)
             cv2.imwrite(IMG_LEFT_LAYER_1,ImgLeft_1)
             cv2.imwrite(IMG_RIGHT_LAYER_1,ImgRight_1)
@@ -150,19 +150,22 @@ class HandTracking:
             #
             #合成
             bg_L = Image.open(IMG_LEFT_LAYER_0).convert("RGBA")
-            img_L_1 = Image.open(IMG_LEFT_LAYER_1).convert("RGBA")
-            img_L_2 = Image.open(IMG_LEFT_LAYER_2).convert("RGBA")
-            img_L_3 = Image.open(IMG_LEFT_LAYER_3).convert("RGBA")
             bg_R = Image.open(IMG_RIGHT_LAYER_0).convert("RGBA")
-            img_R_1 = Image.open(IMG_RIGHT_LAYER_1).convert("RGBA")
-            img_R_2 = Image.open(IMG_RIGHT_LAYER_2).convert("RGBA")
-            img_R_3 = Image.open(IMG_RIGHT_LAYER_3).convert("RGBA")
-            bg_L = Image.alpha_composite(bg_L,img_L_1)
-            bg_L = Image.alpha_composite(bg_L,img_L_2)
-            bg_L = Image.alpha_composite(bg_L,img_L_3)
-            bg_R = Image.alpha_composite(bg_R,img_R_1)
-            bg_R = Image.alpha_composite(bg_R,img_R_2)
-            bg_R = Image.alpha_composite(bg_R,img_R_3)
+            if ins_drowing.wheather_merging[1]:
+                img_L_1 = Image.open(IMG_LEFT_LAYER_1).convert("RGBA")
+                img_R_1 = Image.open(IMG_RIGHT_LAYER_1).convert("RGBA")
+                bg_L = Image.alpha_composite(bg_L,img_L_1)
+                bg_R = Image.alpha_composite(bg_R,img_R_1)
+            if ins_drowing.wheather_merging[2]:
+                img_L_2 = Image.open(IMG_LEFT_LAYER_2).convert("RGBA")
+                img_R_2 = Image.open(IMG_RIGHT_LAYER_2).convert("RGBA")
+                bg_L = Image.alpha_composite(bg_L,img_L_2)
+                bg_R = Image.alpha_composite(bg_R,img_R_2)
+            if ins_drowing.wheather_merging[3]:
+                img_L_3 = Image.open(IMG_LEFT_LAYER_3).convert("RGBA")
+                img_R_3 = Image.open(IMG_RIGHT_LAYER_3).convert("RGBA")
+                bg_L = Image.alpha_composite(bg_L,img_L_3)
+                bg_R = Image.alpha_composite(bg_R,img_R_3)
             bg_L.save(IMG_LEFT_LAYER_0)
             bg_R.save(IMG_RIGHT_LAYER_0)
             #

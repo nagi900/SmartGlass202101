@@ -16,19 +16,24 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
     KEYBOARD_BUTTON_COLOR = [255,255,0,255]
 
 
-    def __init__(self,Leftlayers=None,Rightlayers=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None):
-        self.ImgLeft_Object = Leftlayers[0]
+    def __init__(self,Leftlayers=None,Rightlayers=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None,window_pxl_shape=None):
+        self.ImgLeft_Object = Leftlayers[0]#レイヤーのインデックスが大きいほど手前に idxとレイヤーの前後関係はhandtracking.pyの合成順で定義
         self.ImgRight_Object = Rightlayers[0]
-        self.ImgLeft_Mode = Leftlayers[1]
-        self.ImgRight_Mode = Rightlayers[1]
+        self.ImgLeft_Keyboard = Leftlayers[1]
+        self.ImgRight_Keyboard = Rightlayers[1]
         self.ImgLeft_Hand = Leftlayers[2]
         self.ImgRight_Hand = Rightlayers[2]
-        self.ImgLeft_Keyboard = Leftlayers[3]
-        self.ImgRight_Keyboard = Rightlayers[3]
+        self.ImgLeft_Mode = Leftlayers[3]
+        self.ImgRight_Mode = Rightlayers[3]
 
         self.judge_instance = judge_insname #handsign_judgeのインスタンス
         self.img_pro_insname_L = img_pro_insname_L #左目のimg_processingのインスタンス
         self.img_pro_insname_R = img_pro_insname_R #右目のimg_processingのインスタンス
+
+        self.window_pxl_width = window_pxl_shape[0]#表示する画像の幅
+        self.window_pxl_hight = window_pxl_shape[1]
+
+        self.wheather_merging = {1:1,2:1,3:0}#それぞれのlayerをマージするかどうか
 
         self.palm_dipth_info = None
 
@@ -210,20 +215,92 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
 
     def keybaord_typing(self):
         self.typing_mat_2 = self.judge_instance.fin_vec_equation(3)#押したかどうか判別する行列の2行目まで(指の行列)と答えを取得
+        #テスト用　人差し指とキーボードのベースの交点
+        if (
+            #self.judge_instance.rect_trans()[(1+1)*4-2][1] < self.slided_key_positions[4][0][0][0][1] and self.judge_instance.rect_trans()[(1+1)*4][1] > self.slided_key_positions[0][0][0][2][1] and 
+            self.judge_instance.rect_trans()[(1+1)*4-2][2] < self.slided_key_positions[4][0][0][0][2] and self.judge_instance.rect_trans()[(1+1)*4][2] > self.slided_key_positions[0][0][0][2][2]  and 
+            self.judge_instance.rect_trans()[(1+1)*4-2][0] < self.slided_key_positions[1][9][0][0][0] and self.judge_instance.rect_trans()[(1+1)*4][0] > self.slided_key_positions[1][0][0][0][0]
+        ):
+            print("人差し指キーボードの範囲内には入ってる")
+        else:
+            print("入ってない")
+        self.test_space_cross = (
+            np.round(np.matrix([
+                self.typing_mat_2[1][0][0],
+                self.typing_mat_2[1][0][1],
+                [0,1,0],
+            ])**-1)*
+            np.matrix([
+                np.round([self.typing_mat_2[1][1][0],0,0]),
+                np.round([self.typing_mat_2[1][1][1],0,0]),
+                np.round([self.slided_key_positions[0][0][0][0][1],0,0]),
+            ])
+        )
+        print(
+            "人差し指の向きは",self.typing_mat_2[1][0],"\n",
+            "x",self.judge_instance.rect_trans()[(1+1)*4-2][0] ,self.slided_key_positions[1][9][0][0][0], self.slided_key_positions[1][0][0][0][0],"\n",
+            "y",self.judge_instance.rect_trans()[(1+1)*4-2][1] , self.slided_key_positions[4][0][0][0][1],self.slided_key_positions[0][0][0][2][1],"\n",
+            "z",self.judge_instance.rect_trans()[(1+1)*4-2][2] ,self.slided_key_positions[4][0][0][0][2], self.slided_key_positions[0][0][0][2][2],"\n",
+            "スペースキーの高さは",self.slided_key_positions[0][0][0][0][1],"\n"
+            "スペースキーの平面との交点は\n",
+            self.test_space_cross,"\n"
+        )
+        #交点を黒で表示
+        cv2.circle(self.ImgLeft_Hand, self.img_pro_insname_L.point_processing([
+            self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]
+        ]),30,(0,0,0,255),5)
+        cv2.circle(self.ImgRight_Hand, self.img_pro_insname_R.point_processing([
+            self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]
+        ]),30,(0,0,0,255),5)
+        #人差し指の直線を緑で表示
+        cv2.line(
+            self.ImgLeft_Hand, 
+            self.img_pro_insname_L.point_processing(
+                self.judge_instance.rect_trans()[6]
+            ),
+            self.img_pro_insname_L.point_processing(
+                self.judge_instance.rect_trans()[8]
+            ),
+            (0,255,0,255),
+            3
+        )
+        cv2.line(
+            self.ImgRight_Hand, 
+            self.img_pro_insname_R.point_processing(
+                self.judge_instance.rect_trans()[6]
+            ),
+            self.img_pro_insname_L.point_processing(
+                self.judge_instance.rect_trans()[8]
+            ),
+            (0,255,0,255),
+            3
+        )
+        if (
+            self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])
+        ):
+            if (
+                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[0] > 100 and 
+                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[0] < 400 and
+                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[1] > 100 and
+                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[1] < 400
+            ):
+                print("交点が画面の中央！")
+                cv2.imwrite("test/cross_result.png",self.ImgLeft_Hand)
+
         for i in range(0,6):#keyの行
             for j in range(0,11):#keyの列
                 for k in range(0,5):#指
                     self.mat = np.matrix([
                         self.typing_mat_2[k][0][0],
                         self.typing_mat_2[k][0][1],
-                        [0,0,1],
+                        [0,1,0],
                     ])
                     self.cross_point = np.dot(#dotも*も列数行数が一致していないと計算できないっぽい
                         (np.round(self.mat**-1)),
                         np.matrix([
-                            np.round([self.typing_mat_2[0][1][0],0,0]),
-                            np.round([self.typing_mat_2[0][1][1],0,0]),
-                            np.round([self.slided_key_positions[i][j][0][0][2],0,0]),
+                            np.round([self.typing_mat_2[k][1][0],0,0]),
+                            np.round([self.typing_mat_2[k][1][1],0,0]),
+                            np.round([self.slided_key_positions[i][j][0][0][1],0,0]),
                         ])
                     )
                     #print("keyの値",self.slided_key_positions[i][j][0][0][2])
@@ -247,22 +324,12 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         (self.judge_instance.rect_trans()[(k+1)*4-2][1] <= self.cross_point[1,0] ) and ( self.cross_point[1,0] <= self.judge_instance.rect_trans()[(k+1)*4][1] )
                     ):
                         print("指",k,self.slided_key_positions[i][j][1])
-                    elif (
-                        self.judge_instance.rect_trans()[(k+1)*4-2][1] < self.slided_key_positions[0][0][0][0][1] and self.judge_instance.rect_trans()[(k+1)*4][1] > self.slided_key_positions[0][0][0][0][1] and 
-                        self.judge_instance.rect_trans()[(k+1)*4-2][2] < self.slided_key_positions[4][0][0][0][2] and self.judge_instance.rect_trans()[(k+1)*4][2] > self.slided_key_positions[0][0][0][0][2]  and 
-                        self.judge_instance.rect_trans()[(k+1)*4-2][0] < self.slided_key_positions[1][9][0][0][0] and self.judge_instance.rect_trans()[(k+1)*4][0] > self.slided_key_positions[1][0][0][0][0]
-                    ):
-                        #print("指",k,"キーボードの範囲内には入ってる")
-                        pass
                     else:
                         #print(
                         #    #"指",k,"の位置は",self.judge_instance.rect_trans()[(k+1)*4-2],self.judge_instance.rect_trans()[(k+1)*4],
                         #    "指",k,"key",self.slided_key_positions[i][j][1],"打ってない 交点は",self.cross_point[0,0],self.cross_point[1,0],self.cross_point[2,0]
                         #)
                         pass
-                    cv2.circle(self.ImgLeft_Keyboard, self.img_pro_insname_L.point_processing([
-                        self.cross_point[0,0],self.cross_point[1,0],self.cross_point[2,0]
-                    ]),10,(0,0,0))#交点を黒で表示
 
     def drowing_OBJ(self,path,magnification=[1,1,1],rotation=[1,1,1],translation=[0,0,0]):#mgnification:拡大 rotation:回転 taranslation:平行移動
         
@@ -309,9 +376,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
         
         if (
-            "keyboard" in self.current_mode and#keyboardが存在して keyboardのspacekeyの座標より上下5cm,手前10cm、zkeyの左から/keyの右まで　なら
-            self.judge_instance.rect_trans()[0][1] < self.slided_key_positions[0][0][0][0][1]+50 and self.judge_instance.rect_trans()[0][1] > self.slided_key_positions[0][0][0][0][1]-50 and 
-            self.judge_instance.rect_trans()[0][2] < self.slided_key_positions[0][0][0][0][2] and self.judge_instance.rect_trans()[0][2] > self.slided_key_positions[0][0][0][0][2]-100  and 
+            "keyboard" in self.current_mode and#keyboardが存在して keyboardのspacekeyの座標より上下10cm,手前10cmから一番奥のキーまで、zkeyの左から/keyの右まで　なら
+            self.judge_instance.rect_trans()[0][1] < self.slided_key_positions[0][0][0][0][1]+100 and self.judge_instance.rect_trans()[0][1] > self.slided_key_positions[0][0][0][0][1]-100 and 
+            self.judge_instance.rect_trans()[0][2] < self.slided_key_positions[4][0][0][0][2] and self.judge_instance.rect_trans()[0][2] > self.slided_key_positions[0][0][0][0][2]-100  and 
             self.judge_instance.rect_trans()[0][0] < self.slided_key_positions[1][9][0][0][0] and self.judge_instance.rect_trans()[0][0] > self.slided_key_positions[1][0][0][0][0]
         ):
             self.hand_landmarks_color=[0,0,255,255]#手の色を変える
@@ -328,8 +395,19 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         #        cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
 
         if text_prehansig == "3D_tranceform" and "3Dobject" in self.current_mode:
-                self.img_reset("mode","all")
-                self.current_mode.append("3Dobject")
-                self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],self.judge_instance.midfin_vec(),[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
-                cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
-                cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
+            self.img_reset("mode","all")
+            self.current_mode.append("3Dobject")
+            self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],self.judge_instance.midfin_vec(),[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
+            cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
+            cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
+    
+        if text_prehansig == "choice_mode_move" or text_prehansig == "choice_mode_cleck":
+            if (#右目の画面の設定のところに人差し指があるなら
+                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8])[0] > self.window_pxl_width-100 and
+                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8])[1] < 100
+            ):
+                if text_prehansig == "choice_mode_cleck":#cleckしたなら
+                    if self.wheather_merging[3] == 0:#Modeレイヤーをマージするかどうかを変更
+                        self.wheather_merging[3] = 1
+                    elif self.wheather_merging[3] == 1:
+                        self.wheather_merging[3] = 0
