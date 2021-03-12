@@ -29,7 +29,7 @@ handsign_judge.pyのメソッドpalm_dipthを使用しています。<br>
 面Sを、ベクトルv方向に手のひらの長さの1/3ずらした、面S'を考える。<br>
 ・指先が面Sより手首側なら「-1」<br>
 ・指先が面SとS'の間なら「0」<br>
-・指先が面Sより外側(中指の付け根側)なら「1」<br>
+・指先が面S'より外側(中指の付け根側)なら「1」<br>
 とする。<br>
 ![手のひらの向き](Discription/handsign_judge_imagen/finger_raising.png)
 
