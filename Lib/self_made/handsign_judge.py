@@ -16,7 +16,7 @@ class handsign_judge_1:
         self.landmark_y=0.0
         self.landmark_z=0.0
 
-        self.FrontorBack_info="a"##手のひらの裏表を判別　FrontorBackで使用
+        self.palm_direction_info="a"##手のひらの裏表を判別　palm_directionで使用
 
         self.middlefingure_vector_x=0.0
         self.middlefingure_vector_y=0.0
@@ -69,12 +69,15 @@ class handsign_judge_1:
         self.landmarks[self.idx] = this_idx_position #self.landmark
 
     #手のひらの裏表を判別
-    def FrontorBack(self):
-        if self.landmarks[5][0]<self.landmarks[17][0]:#右手で人差し指の付け根が小指の付け根より左にあるなら
-            self.FrontorBack_info = "reverse"
-        else :
-            self.FrontorBack_info = "overse"
-        return self.FrontorBack_info
+    def palm_direction(self):#向きdirection
+        if np.abs(self.landmarks[5][0]-self.landmarks[17][0]) > np.abs(self.landmarks[0][2]-self.landmarks[9][2])/3:#手のひらの縦幅(カメラ映像上)の1/3以上差があるなら
+            if self.landmarks[5][0]-self.landmarks[17][0] < 0:#右手で人差し指の付け根が小指の付け根より左にあるなら
+                self.palm_direction_info = "reverse"
+            else :
+                self.palm_direction_info = "overse"
+        else:
+            self.palm_direction_info = "side"
+        return self.palm_direction_info
 
     #中指の付け根のの向きを判別
     def midfin_vec(self):
@@ -188,14 +191,14 @@ class handsign_judge_1:
 
     #結果を返す これをメインで使う
     def result(self):
-        #print("手のひらの表裏判別",self.FrontorBack())
+        #print("手のひらの表裏判別",self.palm_direction())
         #print("中指の付け根の向き",self.midfin_vec())
         #print("指の曲げ伸ばし",self.FingerRaising())
 
         if self.FingerRaising() == {"5":1, "9":0, '13':-1, '17':-1}:
             self.result_info = "3D_tranceform"
 
-        elif self.FrontorBack() == "reverse":
+        elif self.palm_direction() == "reverse":
             if self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': -1}:
                 self.result_info = "choice_mode_move"
             elif self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': 1}:
@@ -226,7 +229,7 @@ class handsign_judge_1:
                     self.result_info="握りこぶし コマンドなし"
 
 
-        elif self.FrontorBack() == "overse":
+        elif self.palm_direction() == "overse":
             if self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': -1}:
                 self.result_info = "shortcut_1"
             if self.FingerRaising() == {'5': 1, '9': 1, '13': -1, '17': -1}:
@@ -235,5 +238,9 @@ class handsign_judge_1:
                 self.result_info = "shortcut_3"
             if self.FingerRaising() == {'5': 1, '9': 1, '13': 1, '17': 1}:
                 self.result_info = "shortcut_4"
+
+
+        elif self.palm_direction() == "side":
+            self.result_info = "sidewayspalm"
 
         return self.result_info

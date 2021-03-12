@@ -21,6 +21,7 @@ import handtracking
 
 #resource_add_path("./fonts")#デフォルトのフォントを変更
 #LabelBase.register(DEFAULT_FONT,"mplus-2c-regular.ttf") #日本語
+#resource_add_path("./Image_layer")
 
 
 class SmartGlassWidget(Widget):
@@ -31,18 +32,19 @@ class SmartGlassWidget(Widget):
 
     def __init__(self, **kwargs):
         super(SmartGlassWidget,self).__init__(**kwargs)
-        #self.image_L_src = "./Discription/SmartGlass202101_sequence01.png"#"./Image_layer/ImgLeft_0.png"
-        self.image_R_src = "./Image_layer/ImgRight_0.png"
+        self.image_L_src = "./test/landmark_line.png"
+        self.image_R_src = "./test/calender.png"
         Clock.schedule_interval(self.update,0.01)
         pass
 
     def update(self,dt):
         print("更新")
-        #self.image_L = self.image_L_src
-        self.image_R_src = "./Image_layer/ImgRight_0.png"
+        self.image_L_src = "./test/landmark_line.png"
+        self.image_R_src = "./test/calender.png"
 
     def StartbuttonClicked(self):
-        handtracking.HandTracking().run()
+        handtracking.HandTracking().run()#多分これをやっている間は更新が止まる
+        pass
     
 class SmartGlassApp(App):
     def __init__(self,**kwargs):
@@ -52,20 +54,6 @@ class SmartGlassApp(App):
     def build(self):
         self.widget = SmartGlassWidget()
         return self.widget
-
-    def set_image_src(self, src):
-        self.widget.set_image_src(src)
-
-
-def slides(app, a):
-    dir_name = "./images"
-    files = glob.glob(os.path.join(dir_name, "*.png"))
-
-    while True:
-        random.shuffle(files)
-        for file_name in files:
-            time.sleep(1)
-            app.set_image_src(file_name)
 
 if __name__ == "__main__":
     SmartGlassApp().run()

@@ -148,7 +148,7 @@ class HandTracking:
             cv2.imwrite(IMG_LEFT_LAYER_3,ImgLeft_3)
             cv2.imwrite(IMG_RIGHT_LAYER_3,ImgRight_3)
             #
-            #合成
+            #合成 drowing内でやった方がいいかも
             bg_L = Image.open(IMG_LEFT_LAYER_0).convert("RGBA")
             bg_R = Image.open(IMG_RIGHT_LAYER_0).convert("RGBA")
             if ins_drowing.wheather_merging[1]:
