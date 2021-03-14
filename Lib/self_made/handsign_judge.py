@@ -76,7 +76,7 @@ class handsign_judge_1:
             else :
                 self.palm_direction_info = "overse"
         else:
-            self.palm_direction_info = "side"
+            self.palm_direction_info = "sidewayspalm"
         return self.palm_direction_info
 
     #中指の付け根のの向きを判別
@@ -240,7 +240,7 @@ class handsign_judge_1:
                 self.result_info = "shortcut_4"
 
 
-        elif self.palm_direction() == "side":
+        elif self.palm_direction() == "sidewayspalm":
             self.result_info = "sidewayspalm"
 
         return self.result_info

@@ -36,6 +36,7 @@ class HandTracking:
         ACTWIN_PXL_HIGHT=int(500)
         ACTWIN_L_NAME='active window left' #ウィンドウの名前
         ACTWIN_R_NAME='active window right'
+        LAYER_NUM = 4#レイヤーの枚数 最低4枚
 
         PUPILLARY_DISTANCE=60.0 #瞳と瞳の距離(PD)[mm]
         VERTEX_DISTANCE=12 #(角膜)頂点間距離{mm} 通常12mmくらい 角膜の頂点とレンズ後方の距離
@@ -54,42 +55,37 @@ class HandTracking:
         WHITE_IMG = np.full((ACTWIN_PXL_WIDTH,ACTWIN_PXL_HIGHT,3),255)
         ALPHA_IMG = np.insert(WHITE_IMG,3,0,axis=2)
         WHITE_IMG = np.insert(WHITE_IMG,3,255,axis=2)#ここ普通に最初から全要素255にした方がいい
-        IMG_LEFT_LAYER_0 = 'Image_layer/ImgLeft_0.png'
-        IMG_RIGHT_LAYER_0 = 'Image_layer/ImgRight_0.png'
-        cv2.imwrite(IMG_LEFT_LAYER_0,WHITE_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_0,WHITE_IMG)
-        ImgLeft = cv2.imread(IMG_LEFT_LAYER_0,-1)#これをベースにしてレイヤーを合成する
-        ImgRight = cv2.imread(IMG_RIGHT_LAYER_0,-1)#これをベースにする
+        IMG_LEFT_LAYER_PATH_0 = 'Image_layer/ImgLeft_0.png'
+        IMG_RIGHT_LAYER_PATH_0 = 'Image_layer/ImgRight_0.png'
+        cv2.imwrite(IMG_LEFT_LAYER_PATH_0,WHITE_IMG)
+        cv2.imwrite(IMG_RIGHT_LAYER_PATH_0,WHITE_IMG)
+        ImgLeft = cv2.imread(IMG_LEFT_LAYER_PATH_0,-1)#これをベースにしてレイヤーを合成する
+        ImgRight = cv2.imread(IMG_RIGHT_LAYER_PATH_0,-1)#これをベースにする
         
+        LeftLayers = [ImgLeft]
+        RightLayers = [ImgRight]
         #合成するレイヤー
-        IMG_LEFT_LAYER_1 = 'Image_layer/ImgLeft_1.png'
-        IMG_RIGHT_LAYER_1 = 'Image_layer/ImgRight_1.png'
-        cv2.imwrite(IMG_LEFT_LAYER_1,ALPHA_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_1,ALPHA_IMG)
-        ImgLeft_1 = cv2.imread(IMG_LEFT_LAYER_1,-1)#-1をつけるとアルファチャンネルも読み込める
-        ImgRight_1 = cv2.imread(IMG_RIGHT_LAYER_1,-1)
+        for layer_num in range(LAYER_NUM-1):
+            IMG_LEFT_LAYER_PATH = f'Image_layer/ImgLeft_{layer_num+1}.png'
+            IMG_RIGHT_LAYER_PATH = f'Image_layer/ImgRight_{layer_num+1}.png'
+            cv2.imwrite(IMG_LEFT_LAYER_PATH,ALPHA_IMG)
+            cv2.imwrite(IMG_RIGHT_LAYER_PATH,ALPHA_IMG)
+            ImgLeft = cv2.imread(IMG_LEFT_LAYER_PATH,-1)#-1をつけるとアルファチャンネルも読み込める
+            ImgRight = cv2.imread(IMG_RIGHT_LAYER_PATH,-1)
+            LeftLayers.append(ImgLeft)
+            RightLayers.append(ImgRight)
 
-        IMG_LEFT_LAYER_2 = 'Image_layer/ImgLeft_2.png'
-        IMG_RIGHT_LAYER_2 = 'Image_layer/ImgRight_2.png'
-        cv2.imwrite(IMG_LEFT_LAYER_2,ALPHA_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_2,ALPHA_IMG)
-        ImgLeft_2 = cv2.imread(IMG_LEFT_LAYER_2,-1)
-        ImgRight_2 = cv2.imread(IMG_RIGHT_LAYER_2,-1)
-
-        IMG_LEFT_LAYER_3 = 'Image_layer/ImgLeft_3.png'
-        IMG_RIGHT_LAYER_3 = 'Image_layer/ImgRight_3.png'
-        cv2.imwrite(IMG_LEFT_LAYER_3,ALPHA_IMG)
-        cv2.imwrite(IMG_RIGHT_LAYER_3,ALPHA_IMG)
-        ImgLeft_3 = cv2.imread(IMG_LEFT_LAYER_3,-1)
-        ImgRight_3 = cv2.imread(IMG_RIGHT_LAYER_3,-1)
-        
-        LeftLayers = [ImgLeft,ImgLeft_1,ImgLeft_2,ImgLeft_3]
-        RightLayers = [ImgRight,ImgRight_1,ImgRight_2,ImgRight_3]
+        #合成して表示するかどうか(初期状態)
+        wheather_merging_layer = [1]#ベースのImg_Left(もしくはRight)_layer_0は1
+        for layer_num in range(LAYER_NUM-3):
+            wheather_merging_layer.append(1)
+        wheather_merging_layer.append(0)#後ろから2番目(modeを表示するレイヤー)は初期状態では非表示
+        wheather_merging_layer.append(1)
 
         ins_jesture = handsign_judge.handsign_judge_1(PALM_WIDTH, (MAX_CAMERA_SIDE_ANGLE,MAX_CAMERA_VERTICAL_ANGLE))#先にこっち
         lefteye_process = img_processing.plr_trns(VERTEX_DISTANCE, (DISPLAY_WIDTH,DISPLAY_HIGHT) , (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), -PUPILLARY_DISTANCE/2)
         righteye_process = img_processing.plr_trns(VERTEX_DISTANCE, (DISPLAY_WIDTH,DISPLAY_HIGHT) , (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), PUPILLARY_DISTANCE/2)
-        ins_drowing = drowing.drowing(LeftLayers, RightLayers, ins_jesture, lefteye_process, righteye_process, (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH))#インスタンスも引き数にできる
+        ins_drowing = drowing.drowing(LeftLayers, RightLayers, ins_jesture, lefteye_process, righteye_process, (ACTWIN_PXL_WIDTH,ACTWIN_PXL_WIDTH), wheather_merging_layer)#インスタンスも引き数にできる
         ########################################
 
 
@@ -139,40 +135,25 @@ class HandTracking:
 
             
             #保存
-            cv2.imwrite(IMG_LEFT_LAYER_0,ImgLeft)#merge後のlayer0の保存は一週遅れる
-            cv2.imwrite(IMG_RIGHT_LAYER_0,ImgRight)
-            cv2.imwrite(IMG_LEFT_LAYER_1,ImgLeft_1)
-            cv2.imwrite(IMG_RIGHT_LAYER_1,ImgRight_1)
-            cv2.imwrite(IMG_LEFT_LAYER_2,ImgLeft_2)
-            cv2.imwrite(IMG_RIGHT_LAYER_2,ImgRight_2)
-            cv2.imwrite(IMG_LEFT_LAYER_3,ImgLeft_3)
-            cv2.imwrite(IMG_RIGHT_LAYER_3,ImgRight_3)
-            #
+            for layer_num in range(LAYER_NUM):
+                cv2.imwrite(f'Image_layer/ImgLeft_{layer_num}.png',LeftLayers[layer_num])#merge後のlayer0の保存は一週遅れる
+                cv2.imwrite(f'Image_layer/ImgRight_{layer_num}.png',RightLayers[layer_num])
             #合成 drowing内でやった方がいいかも
-            bg_L = Image.open(IMG_LEFT_LAYER_0).convert("RGBA")
-            bg_R = Image.open(IMG_RIGHT_LAYER_0).convert("RGBA")
-            if ins_drowing.wheather_merging[1]:
-                img_L_1 = Image.open(IMG_LEFT_LAYER_1).convert("RGBA")
-                img_R_1 = Image.open(IMG_RIGHT_LAYER_1).convert("RGBA")
-                bg_L = Image.alpha_composite(bg_L,img_L_1)
-                bg_R = Image.alpha_composite(bg_R,img_R_1)
-            if ins_drowing.wheather_merging[2]:
-                img_L_2 = Image.open(IMG_LEFT_LAYER_2).convert("RGBA")
-                img_R_2 = Image.open(IMG_RIGHT_LAYER_2).convert("RGBA")
-                bg_L = Image.alpha_composite(bg_L,img_L_2)
-                bg_R = Image.alpha_composite(bg_R,img_R_2)
-            if ins_drowing.wheather_merging[3]:
-                img_L_3 = Image.open(IMG_LEFT_LAYER_3).convert("RGBA")
-                img_R_3 = Image.open(IMG_RIGHT_LAYER_3).convert("RGBA")
-                bg_L = Image.alpha_composite(bg_L,img_L_3)
-                bg_R = Image.alpha_composite(bg_R,img_R_3)
-            bg_L.save(IMG_LEFT_LAYER_0)
-            bg_R.save(IMG_RIGHT_LAYER_0)
-            #
+            bg_L = Image.open(IMG_LEFT_LAYER_PATH_0).convert("RGBA")
+            bg_R = Image.open(IMG_RIGHT_LAYER_PATH_0).convert("RGBA")
+            for layer_num in range(LAYER_NUM-1):
+                if ins_drowing.wheather_merging_layer[layer_num+1]:#whether_mergingが9でないなら
+                    img_L = Image.open(f'Image_layer/ImgLeft_{layer_num+1}.png').convert("RGBA")
+                    img_R = Image.open(f'Image_layer/ImgRight_{layer_num+1}.png').convert("RGBA")
+                    bg_L = Image.alpha_composite(bg_L,img_L)
+                    bg_R = Image.alpha_composite(bg_R,img_R)
+            bg_L.save('Image_layer/ImgLeft_0.png')
+            bg_R.save('Image_layer/ImgRight_0.png')
+            #for文を使わないで、縦に羅列した方がfpsが早かった気がする
 
             #表示
-            Left = cv2.imread(IMG_LEFT_LAYER_0)#同じインスタンス名で読み込むと画像が重なってしまう
-            Right = cv2.imread(IMG_RIGHT_LAYER_0)
+            Left = cv2.imread(IMG_LEFT_LAYER_PATH_0)#同じインスタンス名で読み込むと画像が重なってしまう
+            Right = cv2.imread(IMG_RIGHT_LAYER_PATH_0)
             cv2.imshow(ACTWIN_L_NAME,Left)
             cv2.imshow(ACTWIN_R_NAME,Right)
             cv2.imshow('MediaPipe Hands', image)

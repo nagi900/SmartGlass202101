@@ -50,10 +50,11 @@ with open("./object_info/semicon_01/semicon_01.obj","w") as f:
         for j in range(5):#上の六つの三角形
             f.write(f"f {i*14+1} {i*14+j+2} {i*14+j+3} \n")
         f.write(f"f {i*14+1} {i*14+7} {i*14+2} \n")
-        for j in range(5):#側面
-            f.write(f"f {i*14+j+2} {i*14+j+3} {i*14+j+8} {i*14+j+9} \n")
-        f.write(f"f {i*14+2} {i*14+7} {i*14+8} {i*14+13} \n")
+        #drowしたら変な形に面がついてしまったので、テスト
+        for j in range(5):#側面 回転方向統一しないと、ちゃんと描画できないことがある
+            f.write(f"f {i*14+j+2} {i*14+j+8} {i*14+j+9} {i*14+j+3}\n")
+        f.write(f"f {i*14+2} {i*14+8} {i*14+13} {i*14+7}\n")
         for j in range(5):#下の六つの三角形
             f.write(f"f {i*14+14} {i*14+j+8} {i*14+j+9} \n")
-        f.write(f"f {i*14+14} {i*14+8} {i*14+13} {i}\n")
+        f.write(f"f {i*14+14} {i*14+8} {i*14+13}\n")
         i +=1

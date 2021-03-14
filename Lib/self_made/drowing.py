@@ -17,15 +17,15 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
     KEYBOARD_BUTTON_COLOR = [255,255,0,255]
 
 
-    def __init__(self,Leftlayers=None,Rightlayers=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None,window_pxl_shape=None):
+    def __init__(self,Leftlayers=None,Rightlayers=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None,window_pxl_shape=[[],[]],wheather_merging_layer=[]):
         self.ImgLeft_Object = Leftlayers[0]#レイヤーのインデックスが大きいほど手前に idxとレイヤーの前後関係はhandtracking.pyの合成順で定義
         self.ImgRight_Object = Rightlayers[0]
-        self.ImgLeft_Keyboard = Leftlayers[1]
-        self.ImgRight_Keyboard = Rightlayers[1]
-        self.ImgLeft_Mode = Leftlayers[2]
-        self.ImgRight_Mode = Rightlayers[2]
-        self.ImgLeft_Hand = Leftlayers[3]
-        self.ImgRight_Hand = Rightlayers[3]
+        self.ImgLeft_Keyboard = Leftlayers[-3]
+        self.ImgRight_Keyboard = Rightlayers[-3]
+        self.ImgLeft_Mode = Leftlayers[-2]
+        self.ImgRight_Mode = Rightlayers[-2]
+        self.ImgLeft_Hand = Leftlayers[-1]
+        self.ImgRight_Hand = Rightlayers[-1]
 
         self.judge_instance = judge_insname #handsign_judgeのインスタンス
         self.img_pro_insname_L = img_pro_insname_L #左目のimg_processingのインスタンス
@@ -34,7 +34,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.window_pxl_width = window_pxl_shape[0]#表示する画像の幅
         self.window_pxl_hight = window_pxl_shape[1]
 
-        self.wheather_merging = {1:1,2:0,3:1}#それぞれのlayerをマージするかどうか
+        self.wheather_merging_layer = wheather_merging_layer #それぞれのlayerをマージするかどうか
 
         self.palm_dipth_info = None
 
@@ -156,7 +156,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 for f in vals[1:]:
                     w = f.split("/")
                     if self.numVertices > 0:
-                        fvID.append(int(w[0])-1)
+                        fvID.append(int(w[0])-1)#IDの値を一つ下げて、0から始まるようにしている
                     if self.numUVs > 0:
                         uvID.append(int(w[1])-1)
                     if self.numNormals > 0:
@@ -332,31 +332,50 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         #)
                         pass
 
-    def drowing_OBJ(self,path,magnification=[1,1,1],rotation=[1,1,1],translation=[0,0,0],targets=["vertex"]):#mgnification:拡大 rotation:回転 taranslation:平行移動
+    def drowing_OBJ(self,path,magnification=[1,1,1],rotation=[[1,0,0],[0,1,0],[0,0,1]],translation=[0,0,0],targets=["vertex"]):#mgnification:拡大 rotation:回転 taranslation:平行移動
         
         obj_list=self.OBJ2List(path)
-        if "vertex" in targets:#頂点を描く
-            obj_vertices = obj_list[0]
-            for obj_vertex in obj_vertices:
-                obj_vertex = [ 
-                    float(obj_vertex[0])*magnification[0] *rotation[0] +translation[0],
-                    float(obj_vertex[1])*magnification[1] *rotation[1] +translation[1],
-                    float(obj_vertex[2])*magnification[2] *rotation[2] +translation[2],
-                ]
-                if ( self.img_pro_insname_L.point_processing(obj_vertex) ) and ( self.img_pro_insname_R.point_processing(obj_vertex) ): 
-                    cv2.circle(self.ImgLeft_Object, self.img_pro_insname_L.point_processing(obj_vertex) ,1,(int(obj_vertex[2]*0.5),int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
-                    cv2.circle(self.ImgRight_Object, self.img_pro_insname_R.point_processing(obj_vertex) ,1,(int(obj_vertex[2]*0.5),int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
-
-        #if "surface" in targets:
-        #    obj_surfaceS = obj_list[3]
-        #    for obj_surface in obj_surface:
-        #            obj_vertex = [ 
-        #            float(obj_vertex[0])*magnification[0] *rotation[0] +translation[0],
-        #            float(obj_vertex[1])*magnification[1] *rotation[1] +translation[1],
-        #            float(obj_vertex[2])*magnification[2] *rotation[2] +translation[2],
-        #        ]
-        #        if ( self.img_pro_insname_L.point_processing(obj_vertex) ) and ( self.img_pro_insname_R.point_processing(obj_vertex) ): 
-        #            cv2.fillConvexPoly(self.ImgLeft_Object, )
+        self.obj_vertices = obj_list[0]
+        self.vertex_num = 0#カウント用変数
+        self.processed_obj_vertices_position = [ {},{} ] #imgprocessing.pyで加工後の左右の画面上の頂点の座標のリスト
+        for obj_vertex in self.obj_vertices:
+            obj_vertex=[#代入後のobj_vertexを別の変数にする方が、拡張しやすいかもしれない ただ、processing.pyとobj_vertexの移動を同時にやったらマジでこんがらがるからやめた方がいい
+                 ( rotation[0][0]*float(obj_vertex[0]) + rotation[0][1]*float(obj_vertex[1]) + rotation[0][2]*float(obj_vertex[2]) )*magnification[0] +translation[0],
+                 ( rotation[1][0]*float(obj_vertex[0]) + rotation[1][1]*float(obj_vertex[1]) + rotation[1][2]*float(obj_vertex[2]) )*magnification[1] +translation[1],
+                 ( rotation[2][0]*float(obj_vertex[0]) + rotation[2][1]*float(obj_vertex[1]) + rotation[2][2]*float(obj_vertex[2]) )*magnification[2] +translation[2],
+            ]
+            if self.img_pro_insname_L.point_processing(obj_vertex) and self.img_pro_insname_R.point_processing(obj_vertex):#この真偽値で描画範囲内か判断する方法って良くないかもしれない
+                self.processed_obj_vertices_position[0][self.vertex_num] = self.img_pro_insname_L.point_processing(obj_vertex)
+                self.processed_obj_vertices_position[1][self.vertex_num] = self.img_pro_insname_R.point_processing(obj_vertex)
+                #targetにvertexが指定されているなら、この時一緒に頂点を描く
+                if ("vertex" in targets) and self.processed_obj_vertices_position[0][self.vertex_num] and self.processed_obj_vertices_position[1][self.vertex_num]: 
+                    cv2.circle(self.ImgLeft_Object, self.processed_obj_vertices_position[0][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
+                    cv2.circle(self.ImgRight_Object, self.processed_obj_vertices_position[1][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
+            self.vertex_num += 1
+            
+        #面
+        if "surface" in targets:
+            obj_surfaceS = obj_list[3]
+            for obj_surface_vertices_IDs in obj_surfaceS:
+                self.wheather_breaking = False#
+                self.processed_current_surface_vertices_positions_L = []
+                self.processed_current_surface_vertices_positions_R = []
+                #全ての頂点が描画範囲内なら
+                if set(obj_surface_vertices_IDs) <= set(list( self.processed_obj_vertices_position[0].keys() )):#ディスプレイ上の座標をsetに変換するのはfor文の外に出した方がいいかも　遅いから
+                    for current_surface_vertices_ID in obj_surface_vertices_IDs:
+                        #ディスプレイ条の座標をリストに格納
+                        self.processed_current_surface_vertices_positions_L.append( self.processed_obj_vertices_position[0][current_surface_vertices_ID] )
+                        self.processed_current_surface_vertices_positions_R.append( self.processed_obj_vertices_position[1][current_surface_vertices_ID] )
+                    cv2.fillConvexPoly(
+                        self.ImgLeft_Object,
+                        np.array(self.processed_current_surface_vertices_positions_L),
+                        [255,125,0,255]#ここのaの値をいい感じに調整して、面が重なると色が濃くなるようにしてもいいかも
+                    )
+                    cv2.fillConvexPoly(
+                        self.ImgRight_Object,
+                        np.array(self.processed_current_surface_vertices_positions_R),
+                        [255,125,0,255]
+                    )
 
     #手を書く 現時点では点のみ
     def drowing_hand_landmarks(self):
@@ -400,12 +419,10 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
             self.hand_landmarks_color=[255,0,0,255]
             
         if text_prehansig == "shortcut_4":
-            self.drowing_OBJ("./Object_info/semicon_01/semicon_01.obj",[100,100,100],[1,1,1],[0,0,self.judge_instance.palm_dipth()])
+            self.drowing_OBJ("./Object_info/semicon_01/semicon_01.obj",[100,100,100], [[1,0,0],[0,1,0],[0,0,1]] ,self.judge_instance.rect_trans()[5],["surface"])
             if not "3Dobject" in self.current_mode:
                 self.img_reset("mode")
                 self.current_mode.append("3Dobject")#キーボード消えちゃうからとりあえず画面消去はしない
-                #↓骸骨を表示
-                #self.drowing_OBJ("../nogit_object/12140_Skull_v3_L2.obj",[10,10,10],translation=[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
 
@@ -456,7 +473,14 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
             if "3Dobject" in self.current_mode:
                 self.img_reset("mode")
                 self.current_mode.append("3Dobject")
-                self.drowing_OBJ("./Object_info/semicon_01/semicon_01.obj",[100,100,100],self.judge_instance.midfin_vec(),[0,0,self.judge_instance.palm_dipth()])#40cm先に表示
+                #選択したobjectを変えるように
+                self.drowing_OBJ(
+                    "./Object_info/semicon_01/semicon_01.obj",
+                    [100,100,100],
+                    [ [0,-self.judge_instance.midfin_vec()[2],self.judge_instance.midfin_vec()[1] ],[ self.judge_instance.midfin_vec()[2],0,-self.judge_instance.midfin_vec()[0] ],[ -self.judge_instance.midfin_vec()[1],self.judge_instance.midfin_vec()[0],0 ] ],
+                    self.judge_instance.rect_trans()[5],#人差し指の付け根を基準にして表示
+                    ["vertex","surface"],
+                )
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
             
@@ -471,10 +495,10 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                     self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8])[0] > self.window_pxl_width-100 and
                     self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8])[1] < 100
                 ):
-                    if self.wheather_merging[2] == 0:#Modeレイヤーをマージするかどうかを変更
-                        self.wheather_merging[2] = 1
-                    elif self.wheather_merging[2] == 1:
-                        self.wheather_merging[2] = 0
+                    if self.wheather_merging_layer[-2] == 0:#Modeレイヤーをマージするかどうかを変更
+                        self.wheather_merging_layer[-2] = 1
+                    elif self.wheather_merging_layer[-2] == 1:
+                        self.wheather_merging_layer[-2] = 0
     
         if text_prehansig == "sidewayspalm" and ("keyboard" in self.current_mode):
             self.current_mode.pop(self.current_mode.index("keyboard"))#current_modeからkeyboardを削除
