@@ -52,8 +52,7 @@ class SmartGlassApp(App):
         self.title = "SmartGlass"
 
     def build(self):
-        self.widget = SmartGlassWidget()
-        return self.widget
+        return SmartGlassWidget()
 
 if __name__ == "__main__":
     SmartGlassApp().run()
