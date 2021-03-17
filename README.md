@@ -77,3 +77,12 @@ https://latex.codecogs.com/gif.latex?\&space;\begin{displaymath}&space;\left\(&s
 ...(key-6)
 <br>
 https://latex.codecogs.com/gif.latex?\&space;\begin{displaymath}&space;\left\(&space;\begin{array}{ccc}&space;x&space;\\&space;y&space;\\&space;z&space;\end{array}&space;\right\)&space;\end{displaymath}&space;=&space;\begin{displaymath}&space;\left\(&space;\begin{array}{ccc}&space;b&space;&&space;-a&space;&&space;0&space;\\&space;c&space;&&space;0&space;&&space;-az&space;\\&space;a_v&space;&&space;b_v&space;&&space;c_v&space;\end{array}&space;\right\)&space;^{-1}&space;\end{displaymath}&space;\odot&space;\begin{displaymath}&space;\left\(&space;\begin{array}{ccc}&space;bx_0&space;-&space;ay_0&space;\\&space;cx_0&space;-&space;az_0&space;\\&space;d_v&space;\end{array}&space;\right\)&space;\end{displaymath}&space;\
+
+## 4. 本コードを使用される方へ
+### 4.1. 座標などの変数の取得方法
+手の各点の直交座標は、
+```python
+ from .lib/selfmade import handsign_judge
+ handsignsign_judge.handsign_judge().react_trance()
+ #［［手首のx座標,手首のy座標,手首のz座標］,［親指の付け根のx座標,親指の付け根のy座標,親指の付け根のz座標］,...］
+ ```
