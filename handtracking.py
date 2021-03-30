@@ -83,10 +83,11 @@ class Handtracking:
         self.wheather_merging_layer.append(0)#後ろから2番目(modeを表示するレイヤー)は初期状態では非表示
         self.wheather_merging_layer.append(1)
 
-        self.ins_jesture = handsign_judge.handsignJudgeClass(self.PALM_WIDTH, (self.MAX_CAMERA_SIDE_ANGLE, self.MAX_CAMERA_VERTICAL_ANGLE))#先にこっち
+        self.ins_timeMusure = time_mesure.timeMesure()
+        self.ins_jesture = handsign_judge.handsignJudgeClass(self.PALM_WIDTH, (self.MAX_CAMERA_SIDE_ANGLE, self.MAX_CAMERA_VERTICAL_ANGLE), self.ins_timeMusure)#先にこっち
         self.lefteye_process = img_processing.plr_trns(self.VERTEX_DISTANCE, (self.DISPLAY_WIDTH,self.DISPLAY_HIGHT) , (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), -self.PUPILLARY_DISTANCE/2)
         self.righteye_process = img_processing.plr_trns(self.VERTEX_DISTANCE, (self.DISPLAY_WIDTH,self.DISPLAY_HIGHT) , (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), self.PUPILLARY_DISTANCE/2)
-        self.ins_drowing = drowing.drowing(self.LeftLayers, self.RightLayers, self.ins_jesture, self.lefteye_process, self.righteye_process, (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), self.wheather_merging_layer)#インスタンスも引き数にできる
+        self.ins_drowing = drowing.drowing(self.LeftLayers, self.RightLayers, self.ins_jesture, self.lefteye_process, self.righteye_process, (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), self.wheather_merging_layer, self.ins_timeMusure)#インスタンスも引き数にできる
         ########################################
 
 

@@ -3,13 +3,12 @@ import math
 from Lib.self_made import time_mesure
 
 class handsignJudgeClass:
-    sign_time_ins=time_mesure.Time_mesure()
-
-    def __init__(self,palm_width,max_angle):
+    def __init__(self,palm_width,max_angle,time_mesure_ins):
         self.palm_width=palm_width#手のひらの横幅
         self.halfof_palm_width = palm_width / 2 #手のひらの横幅の半分
-        self.MHA=max_angle[0] #max_horaizontal_angle横方向の画角
-        self.MVA=max_angle[1] #max_vertical_angle縦方向の画角
+        self.MHA = max_angle[0] #max_horaizontal_angle横方向の画角
+        self.MVA = max_angle[1] #max_vertical_angle縦方向の画角
+        self.tm = time_mesure_ins
 
         self.landmarks = {}
         self.landmark_x=0.0
@@ -47,14 +46,15 @@ class handsignJudgeClass:
         self.palm_dipth_info=0.0
 
         #rect_trans
-        self.rect_trans_magn = None
-        self.rect_trans_result = []
+        self.rectTransMagn = None
+        self.rectTrans_result = []
         
         #keyboard_typing
-        self.finger_vec = []
+        self.fingerVec = []
 
-        #result
-        self.result_info="a"
+        #handSingText
+        self.handSingText_result="noSign"
+        self.handSingText_result_backup="noSign"
 
     #まずこれを呼び出して設定
     def setting(self,idx,landmark_x,landmark_y,landmark_z):#landmark):#
@@ -143,7 +143,7 @@ class handsignJudgeClass:
     def fin_vec_equation(self,joint_num=None,step=1):#equation:方程式 joint_num:第何関節から step:何関節飛びにか
         self.fin_vec_equ_result = []#返り値初期化
         for fin_num in range(joint_num,21,4):#親指から
-            self.finger_vec =[
+            self.fingerVec =[
                 self.rect_trans()[fin_num][0] - self.rect_trans()[fin_num+step][0],
                 self.rect_trans()[fin_num][1] - self.rect_trans()[fin_num+step][1],
                 self.rect_trans()[fin_num][2] - self.rect_trans()[fin_num+step][2],
@@ -157,12 +157,12 @@ class handsignJudgeClass:
             
             self.fin_vec_equ_result.append([
                 [
-                    [self.finger_vec[1],-1*self.finger_vec[0],0],
-                    [0,self.finger_vec[2],-1*self.finger_vec[1]],
+                    [self.fingerVec[1],-1*self.fingerVec[0],0],
+                    [0,self.fingerVec[2],-1*self.fingerVec[1]],
                 ],
                 [
-                    self.finger_vec[1]*self.rect_trans()[fin_num][0] - self.finger_vec[0]*self.rect_trans()[fin_num][1],
-                    self.finger_vec[2]*self.rect_trans()[fin_num][2] - self.finger_vec[1]*self.rect_trans()[fin_num][2],
+                    self.fingerVec[1]*self.rect_trans()[fin_num][0] - self.fingerVec[0]*self.rect_trans()[fin_num][1],
+                    self.fingerVec[2]*self.rect_trans()[fin_num][2] - self.fingerVec[1]*self.rect_trans()[fin_num][2],
                 ]
             ])
         return self.fin_vec_equ_result
@@ -178,16 +178,16 @@ class handsignJudgeClass:
     #直交座標変換 rectangular coodinate transform
     def rect_trans(self): 
         #倍率を求める
-        self.rect_trans_magn = 2*self.halfof_palm_width / self.abdis_3D(5,17)#magnification
-        self.rect_trans_result = [] #初期化
+        self.rectTransMagn = 2*self.halfof_palm_width / self.abdis_3D(5,17)#magnification
+        self.rectTrans_result = [] #初期化
         #手首のz座標をpalm_dipthとし、極座標を直交座標として扱っている 後で直す
         for rect_trans_num in range(0,21):
-            self.rect_trans_result.append( [
-                self.landmarks[rect_trans_num][0]*self.rect_trans_magn,
-                self.landmarks[rect_trans_num][1]*self.rect_trans_magn,
-                self.landmarks[rect_trans_num][2]*self.rect_trans_magn + self.palm_dipth(),
+            self.rectTrans_result.append( [
+                self.landmarks[rect_trans_num][0]*self.rectTransMagn,
+                self.landmarks[rect_trans_num][1]*self.rectTransMagn,
+                self.landmarks[rect_trans_num][2]*self.rectTransMagn + self.palm_dipth(),
             ] )
-        return self.rect_trans_result
+        return self.rectTrans_result
 
     #結果を返す これをメインで使う
     def handsignText(self):
@@ -196,51 +196,63 @@ class handsignJudgeClass:
         #print("指の曲げ伸ばし",self.FingerRaising())
 
         if self.FingerRaising() == {"5":1, "9":0, '13':-1, '17':-1}:
-            self.result_info = "3D_tranceform"
+            self.handSingText_result = "3D_tranceform"
 
         elif self.palm_direction() == "reverse":
             if self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': -1}:
-                self.result_info = "choice_mode_move"
+                self.handSingText_result = "choice_mode_move"
             elif self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': 1}:
-                self.result_info = "choice_mode_cleck"
+                self.handSingText_result = "choice_mode_cleck"
             
             elif self.FingerRaising() == {'5': 1, '9': 1, '13': 1, '17': 1}:
                 if (
-                    self.result_info != "keyboard_wait_start" and
-                    self.result_info != "keyboard_wait_01" and
-                    self.result_info != "keyboard_wait_02"
+                    self.handSingText_result_backup != "keyboard_wait_start" and
+                    self.handSingText_result_backup != "keyboard_wait_01" and
+                    self.handSingText_result_backup != "keyboard_wait_02"
                     ):
-                    self.result_info = "keyboard_wait_start"
-                elif self.result_info == "keyboard_wait_01":
-                    self.result_info = "keyboard_wait_02"
+                    self.handSingText_result = "keyboard_wait_start"
+                elif self.handSingText_result_backup == "keyboard_wait_01":
+                    self.handSingText_result = "keyboard_wait_02"
                 #"keyboard_wait_start"か"keyboard_wait_01"ならそのまま
 
 
             elif self.FingerRaising() == {'5': -1, '9': -1, '13': -1, '17': -1}:
-                if self.result_info == "keyboard_wait_start":
-                    handsignJudgeClass.sign_time_ins.time_target_set("keyboard_wait") #time_mesureモジュールで開始時間設定
-                    self.result_info = "keyboard_wait_01"
-                elif self.result_info == "keyboard_wait_01": #さっき握ったままならそのまま
+                if self.handSingText_result_backup == "keyboard_wait_start":
+                    self.tm.targetCount("keyboard_wait") #time_mesureモジュールで開始時間設定
+                    self.handSingText_result = "keyboard_wait_01"
+                elif self.handSingText_result_backup == "keyboard_wait_01": #さっき握ったままならそのまま
                     pass
-                elif self.result_info == "keyboard_wait_02":
-                    if handsignJudgeClass.sign_time_ins.time_measu("keyboard_wait") < 5: #開始時間設定から5秒以内なら
-                        self.result_info = "keyboard_open"
+                elif self.handSingText_result_backup == "keyboard_wait_02":
+                    if self.tm.targetCount("keyboard_wait") < 5: #開始時間設定から5秒以内なら
+                        self.handSingText_result = "keyboard_open"
                 else:
-                    self.result_info="握りこぶし コマンドなし"
+                    self.handSingText_result="握りこぶし コマンドなし"
 
 
         elif self.palm_direction() == "overse":
             if self.FingerRaising() == {'5': 1, '9': -1, '13': -1, '17': -1}:
-                self.result_info = "shortcut_1"
+                if self.tm.targetCount("shortcut_1") > 2:#2秒以上経過したなら
+                    self.handSingText_result = "shortcut_1"
+                else:
+                    self.handSingText_result = "shortcut_1_wait"
             if self.FingerRaising() == {'5': 1, '9': 1, '13': -1, '17': -1}:
-                self.result_info = "shortcut_2"
+                if self.tm.targetCount("shortcut_2") > 2:
+                    self.handSingText_result = "shortcut_2"
+                else:
+                    self.handSingText_result = "shortcut_2_wait"
             if self.FingerRaising() == {'5': 1, '9': 1, '13': 1, '17': -1}:
-                self.result_info = "shortcut_3"
+                if self.tm.targetCount("shortcut_3") > 2:
+                    self.handSingText_result = "shortcut_3"
+                else:
+                    self.handSingText_result = "shortcut_3_wait"
             if self.FingerRaising() == {'5': 1, '9': 1, '13': 1, '17': 1}:
-                self.result_info = "shortcut_4"
-
+                if self.tm.targetCount("shortcut_4") > 2:
+                    self.handSingText_result = "shortcut_4"
+                else:
+                    self.handSingText_result = "shortcut_4_wait"
 
         elif self.palm_direction() == "sidewayspalm":
-            self.result_info = "sidewayspalm"
+            self.handSingText_result = "sidewayspalm"
 
-        return self.result_info
+        self.handSingText_result_backup = self.handSingText_result
+        return self.handSingText_result

@@ -5,6 +5,8 @@ import math
 import traceback
 from PIL import Image
 
+#cv2で描画するときはアルファ値も指定しないといけないので注意
+
 class drowing:#モードの記述や画面クリアなどで、相対座標ではなく、絶対座標から指定してしまっている imgproccesingとか使って相対座標で描けるように
     FONT1 = cv2.FONT_HERSHEY_COMPLEX
     FONT2 = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -17,7 +19,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
     KEYBOARD_BUTTON_COLOR = [255,255,0,255]
     NOMATERIAL_COLOR = [255,0,0,255]#オブジェクトを表示するとき、表示するmaterialが指定されていない時の色
 
-    def __init__(self,Leftlayers=None,Rightlayers=None,judge_insname=None,img_pro_insname_L=None,img_pro_insname_R=None,window_pxl_shape=[[],[]],wheather_merging_layer=[]):
+    def __init__(self,Leftlayers=None,Rightlayers=None,judgeInstance=None,imgProInstance_L=None,imgProInstance_R=None,window_pxl_shape=[[],[]],wheather_merging_layer=[],timeMesureInstance=None):
         self.ImgLeft_Base = Leftlayers[0]#レイヤーのインデックスが大きいほど手前に idxとレイヤーの前後関係はhandtracking.pyの合成順で定義
         self.ImgRight_Base = Rightlayers[0]
         self.ImgLeft_ObjectLayers = Leftlayers[1:-3]
@@ -29,9 +31,11 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.ImgLeft_Hand = Leftlayers[-1]
         self.ImgRight_Hand = Rightlayers[-1]
 
-        self.judge_instance = judge_insname #handsign_judgeのインスタンス
-        self.img_pro_insname_L = img_pro_insname_L #左目のimg_processingのインスタンス
-        self.img_pro_insname_R = img_pro_insname_R #右目のimg_processingのインスタンス
+        self.judge_instance = judgeInstance #handsign_judgeのインスタンス
+        self.imgProInstance_L = imgProInstance_L #左目のimg_processingのインスタンス
+        self.imgProInstance_R = imgProInstance_R #右目のimg_processingのインスタンス
+
+        self.timeMeasureInstance = timeMesureInstance#時間を測るインスタンス 間違えて呼び出すとカウントがスタートしてバグの元になるので注意
 
         self.window_pxl_width = window_pxl_shape[0]#表示する画像の幅
         self.window_pxl_hight = window_pxl_shape[1]
@@ -46,8 +50,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.eyeL_ofter_pro_object = [] #加工後のオブジェクトの頂点の座標のリスト
         self.eyeR_ofter_pro_object = []
 
-        self.text_prehansig_backup = None
-        self.current_mode = []
+        self.present_HandSignText = "not"
+        self.HandSignText_backup = "not"
+        self.current_mode = []#現在有効なモード
 
         #readOBJ
         self.readOBJ_path_backup=None
@@ -132,21 +137,25 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
     def drowProgressIndicator(self,progress=float):#0.0<=progress<=1.0
         cv2.ellipse(
             self.ImgLeft_ObjectLayers[-1],
-            [int(self.window_pxl_width/2),int(self.window_pxl_hight/2)],
-            [int(self.window_pxl_width/5),int(self.window_pxl_hight/5)],
+            (int(self.window_pxl_width/2),int(self.window_pxl_hight/2)),
+            (int(self.window_pxl_width/20),int(self.window_pxl_hight/20)),
+            270,
             0,
-            0,
-            int(progress*360),
-            [0,55+int(progress*200),455-int(progress*200)]
+            -int(progress*360),
+            [55+int(progress*200),455-int(progress*200),0,125],
+            5,
+            cv2.LINE_AA
         )
         cv2.ellipse(
             self.ImgRight_ObjectLayers[-1],
-            [int(self.window_pxl_width/2),int(self.window_pxl_hight/2)],
-            [int(self.window_pxl_width/5),int(self.window_pxl_hight/5)],
+            (int(self.window_pxl_width/2),int(self.window_pxl_hight/2)),
+            (int(self.window_pxl_width/20),int(self.window_pxl_hight/20)),
+            270,
             0,
-            0,
-            int(progress*360),
-            [0,55+int(progress*200),455-int(progress*200)]
+            -int(progress*360),
+            [55+int(progress*200),455-int(progress*200),0,125],
+            5,
+            cv2.LINE_AA
         )
 
     #objファイルをリストにする
@@ -253,8 +262,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 drowing.KEYBOARD_BASE[i][1]+self.rect_trans_info[0][1], 
                 drowing.KEYBOARD_BASE[i][2]+self.palm_dipth_info
             ]
-            self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
-            self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
+            self.eyeL_ofter_pro_object.append( self.imgProInstance_L.point_processing(self.before_pro_object) )
+            self.eyeR_ofter_pro_object.append( self.imgProInstance_R.point_processing(self.before_pro_object) )
         if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら    
             cv2.fillConvexPoly(self.ImgLeft_Keyboard,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
             cv2.fillConvexPoly(self.ImgRight_Keyboard,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BASE_COLOR)
@@ -274,8 +283,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                             keybox[2]+math.floor(self.palm_dipth_info),
                         ]
                         self.slided_key_position_keyrect.append(self.before_pro_object)
-                        self.eyeL_ofter_pro_object.append( self.img_pro_insname_L.point_processing(self.before_pro_object) )
-                        self.eyeR_ofter_pro_object.append( self.img_pro_insname_R.point_processing(self.before_pro_object) )
+                        self.eyeL_ofter_pro_object.append( self.imgProInstance_L.point_processing(self.before_pro_object) )
+                        self.eyeR_ofter_pro_object.append( self.imgProInstance_R.point_processing(self.before_pro_object) )
                     if (not None in self.eyeL_ofter_pro_object) and (not None in self.eyeR_ofter_pro_object):#描画距離内なら
                         cv2.fillConvexPoly(self.ImgLeft_Keyboard,np.array(self.eyeL_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)#drowing.KEYBOARD_BUTTON_COLOR)
                         cv2.fillConvexPoly(self.ImgRight_Keyboard,np.array(self.eyeR_ofter_pro_object),drowing.KEYBOARD_BUTTON_COLOR)
@@ -318,19 +327,19 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         #    self.test_space_cross,"\n"
         #)
         #交点を黒で表示
-        cv2.circle(self.ImgLeft_Hand, self.img_pro_insname_L.point_processing([
+        cv2.circle(self.ImgLeft_Hand, self.imgProInstance_L.point_processing([
             self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]
         ]),30,(0,0,0,255),5)
-        cv2.circle(self.ImgRight_Hand, self.img_pro_insname_R.point_processing([
+        cv2.circle(self.ImgRight_Hand, self.imgProInstance_R.point_processing([
             self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]
         ]),30,(0,0,0,255),5)
         #人差し指の直線を緑で表示
         cv2.line(
             self.ImgLeft_Hand, 
-            self.img_pro_insname_L.point_processing(
+            self.imgProInstance_L.point_processing(
                 self.judge_instance.rect_trans()[6]
             ),
-            self.img_pro_insname_L.point_processing(
+            self.imgProInstance_L.point_processing(
                 self.judge_instance.rect_trans()[8]
             ),
             (0,255,0,255),
@@ -338,23 +347,23 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         )
         cv2.line(
             self.ImgRight_Hand, 
-            self.img_pro_insname_R.point_processing(
+            self.imgProInstance_R.point_processing(
                 self.judge_instance.rect_trans()[6]
             ),
-            self.img_pro_insname_L.point_processing(
+            self.imgProInstance_L.point_processing(
                 self.judge_instance.rect_trans()[8]
             ),
             (0,255,0,255),
             3
         )
         if (
-            self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])
+            self.imgProInstance_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])
         ):
             if (
-                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[0] > 100 and 
-                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[0] < 400 and
-                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[1] > 100 and
-                self.img_pro_insname_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[1] < 400
+                self.imgProInstance_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[0] > 100 and 
+                self.imgProInstance_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[0] < 400 and
+                self.imgProInstance_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[1] > 100 and
+                self.imgProInstance_L.point_processing([self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0]])[1] < 400
             ):
                 print("交点が画面の中央付近！ 交点は",self.test_space_cross[0,0],self.test_space_cross[1,0],self.test_space_cross[2,0])
                 cv2.imwrite("test/cross_result.png",self.ImgLeft_Hand)
@@ -421,9 +430,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                     ( rotation[1][0]*float(obj_vertex[0]) + rotation[1][1]*float(obj_vertex[1]) + rotation[1][2]*float(obj_vertex[2]) )*magnification[1] +translation[1],
                     ( rotation[2][0]*float(obj_vertex[0]) + rotation[2][1]*float(obj_vertex[1]) + rotation[2][2]*float(obj_vertex[2]) )*magnification[2] +translation[2],
                 ]
-                if self.img_pro_insname_L.point_processing(obj_vertex) and self.img_pro_insname_R.point_processing(obj_vertex):#この真偽値で描画範囲内か判断する方法って良くないかもしれない
-                    self.processed_obj_vertices_position[0][self.vertex_num] = self.img_pro_insname_L.point_processing(obj_vertex)
-                    self.processed_obj_vertices_position[1][self.vertex_num] = self.img_pro_insname_R.point_processing(obj_vertex)
+                if self.imgProInstance_L.point_processing(obj_vertex) and self.imgProInstance_R.point_processing(obj_vertex):#この真偽値で描画範囲内か判断する方法って良くないかもしれない
+                    self.processed_obj_vertices_position[0][self.vertex_num] = self.imgProInstance_L.point_processing(obj_vertex)
+                    self.processed_obj_vertices_position[1][self.vertex_num] = self.imgProInstance_R.point_processing(obj_vertex)
                     #targetにvertexが指定されているなら、この時一緒に頂点を描く
                     if ("vertex" in targets) and self.processed_obj_vertices_position[0][self.vertex_num] and self.processed_obj_vertices_position[1][self.vertex_num]: 
                         cv2.circle(self.ImgLeft_ObjectLayers[drowingOBJ_whatLayer], self.processed_obj_vertices_position[0][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
@@ -463,25 +472,25 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.eyeL_ofter_pro_object=[]
         self.eyeR_ofter_pro_object=[]
         for transd_lndmrk in self.judge_instance.rect_trans():
-            if self.img_pro_insname_L.point_processing(transd_lndmrk) and self.img_pro_insname_R.point_processing(transd_lndmrk):#描画距離内なら
-                cv2.circle(self.ImgLeft_Hand, self.img_pro_insname_L.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
-                cv2.circle(self.ImgRight_Hand, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
+            if self.imgProInstance_L.point_processing(transd_lndmrk) and self.imgProInstance_R.point_processing(transd_lndmrk):#描画距離内なら
+                cv2.circle(self.ImgLeft_Hand, self.imgProInstance_L.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
+                cv2.circle(self.ImgRight_Hand, self.imgProInstance_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
 
     def drowing_3Dview(self,mode=None): #present handsign 現在のハンドサイン
-        self.text_prehansig=self.judge_instance.handsignText()
+        self.present_HandSignText=self.judge_instance.handsignText()
         self.imgReset("base","all")
 
         if mode == "drowing_hand":
             self.imgReset("hand","all")
             self.drowing_hand_landmarks()
 
-        if self.text_prehansig_backup != self.text_prehansig: #1つ前のself.text_prehansigと違うなら
+        if self.HandSignText_backup != self.present_HandSignText: #1つ前のself.present_HandSignTextと違うなら modeレイヤーを上書き
             self.imgReset("mode","prehansig")
-            self.text_prehansig_backup = self.text_prehansig
-            cv2.putText(self.ImgLeft_Mode,self.text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
-            cv2.putText(self.ImgRight_Mode,self.text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
+            self.HandSignText_backup = self.present_HandSignText
+            cv2.putText(self.ImgLeft_Mode,self.present_HandSignText,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
+            cv2.putText(self.ImgRight_Mode,self.present_HandSignText,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
 
-        if self.text_prehansig == "keyboard_open":
+        if self.present_HandSignText == "keyboard_open":
             if not "keyboard" in self.current_mode:
                 self.imgReset("mode","current_mode")
                 self.current_mode.append("keyboard")
@@ -500,56 +509,58 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         else:
             self.hand_landmarks_color=[255,0,0,255]
             
-        if self.text_prehansig == "shortcut_4":
+        if self.present_HandSignText == "shortcut_4_wait":
+            self.drowProgressIndicator( self.timeMeasureInstance.targetCount("shortcut_4")/2 )
+        elif self.present_HandSignText == "shortcut_4":
             if not "3Dobject" in self.current_mode:
                 self.imgReset("object")
                 self.drowingOBJ("./Object_info/semicon_01/semicon_01.obj", 0,magnification=[100,100,100],translation=self.judge_instance.rect_trans()[5],targets=["surface"],mtlFolderPath="./Object_info/semicon_01/")
                 self.imgReset("mode")
-                self.current_mode.append("3Dobject")#キーボード消えちゃうからとりあえず画面消去はしない
+                self.current_mode.append("3Dobject")
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
 
-        elif self.text_prehansig == "3D_tranceform":
+        elif self.present_HandSignText == "3D_tranceform":
             #フレミングの法則の形にlandmardを線でつなぐ オブジェクトを表示しているときだけ線でつないだ方がいいかも
             cv2.line(
                 self.ImgLeft_Hand,
-                self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[4]),
-                self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[5]),
+                self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[4]),
+                self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[5]),
                 drowing.CHOICE_COLOR,
                 3,
             )
             cv2.line(
                 self.ImgLeft_Hand,
-                self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[8]),
-                self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[5]),
+                self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[8]),
+                self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[5]),
                 drowing.CHOICE_COLOR,
                 3,
             )
             cv2.line(
                 self.ImgLeft_Hand,
-                self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[12]),
-                self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[5]),
+                self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[12]),
+                self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[5]),
                 drowing.CHOICE_COLOR,
                 3,
             )
             cv2.line(
                 self.ImgRight_Hand,
-                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[4]),
-                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[5]),
+                self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[4]),
+                self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[5]),
                 drowing.CHOICE_COLOR,
                 3,
             )
             cv2.line(
                 self.ImgRight_Hand,
-                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8]),
-                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[5]),
+                self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[8]),
+                self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[5]),
                 drowing.CHOICE_COLOR,
                 3,
             )
             cv2.line(
                 self.ImgRight_Hand,
-                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[12]),
-                self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[5]),
+                self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[12]),
+                self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[5]),
                 drowing.CHOICE_COLOR,
                 3,
             )
@@ -571,21 +582,21 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
             
     
-        elif self.text_prehansig == "choice_mode_move" or self.text_prehansig == "choice_mode_cleck":
-            cv2.circle(self.ImgLeft_Hand,self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[8]),10,drowing.CHOICE_COLOR,3)
-            cv2.circle(self.ImgRight_Hand,self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8]),10,drowing.CHOICE_COLOR,3)
-            if self.text_prehansig == "choice_mode_cleck":
-                cv2.circle(self.ImgLeft_Hand,self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[8]),20,drowing.CHOICE_COLOR,4)
-                cv2.circle(self.ImgRight_Hand,self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8]),20,drowing.CHOICE_COLOR,4)
+        elif self.present_HandSignText == "choice_mode_move" or self.present_HandSignText == "choice_mode_cleck":
+            cv2.circle(self.ImgLeft_Hand,self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[8]),10,drowing.CHOICE_COLOR,3)
+            cv2.circle(self.ImgRight_Hand,self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[8]),10,drowing.CHOICE_COLOR,3)
+            if self.present_HandSignText == "choice_mode_cleck":
+                cv2.circle(self.ImgLeft_Hand,self.imgProInstance_L.point_processing(self.judge_instance.rect_trans()[8]),20,drowing.CHOICE_COLOR,4)
+                cv2.circle(self.ImgRight_Hand,self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[8]),20,drowing.CHOICE_COLOR,4)
                 if (#右目の画面の設定のところに人差し指があるなら
-                    self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8])[0] > self.window_pxl_width-100 and
-                    self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8])[1] < 100
+                    self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[8])[0] > self.window_pxl_width-100 and
+                    self.imgProInstance_R.point_processing(self.judge_instance.rect_trans()[8])[1] < 100
                 ):
                     if self.wheather_merging_layer[-2] == 0:#Modeレイヤーをマージするかどうかを変更
                         self.wheather_merging_layer[-2] = 1
                     elif self.wheather_merging_layer[-2] == 1:
                         self.wheather_merging_layer[-2] = 0
     
-        elif self.text_prehansig == "sidewayspalm" and ("keyboard" in self.current_mode):
+        elif self.present_HandSignText == "sidewayspalm" and ("keyboard" in self.current_mode):
             self.current_mode.pop(self.current_mode.index("keyboard"))#current_modeからkeyboardを削除
             self.imgReset("keyboard","all")
