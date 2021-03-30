@@ -83,7 +83,7 @@ class Handtracking:
         self.wheather_merging_layer.append(0)#後ろから2番目(modeを表示するレイヤー)は初期状態では非表示
         self.wheather_merging_layer.append(1)
 
-        self.ins_jesture = handsign_judge.handsign_judge_1(self.PALM_WIDTH, (self.MAX_CAMERA_SIDE_ANGLE, self.MAX_CAMERA_VERTICAL_ANGLE))#先にこっち
+        self.ins_jesture = handsign_judge.handsignJudgeClass(self.PALM_WIDTH, (self.MAX_CAMERA_SIDE_ANGLE, self.MAX_CAMERA_VERTICAL_ANGLE))#先にこっち
         self.lefteye_process = img_processing.plr_trns(self.VERTEX_DISTANCE, (self.DISPLAY_WIDTH,self.DISPLAY_HIGHT) , (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), -self.PUPILLARY_DISTANCE/2)
         self.righteye_process = img_processing.plr_trns(self.VERTEX_DISTANCE, (self.DISPLAY_WIDTH,self.DISPLAY_HIGHT) , (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), self.PUPILLARY_DISTANCE/2)
         self.ins_drowing = drowing.drowing(self.LeftLayers, self.RightLayers, self.ins_jesture, self.lefteye_process, self.righteye_process, (self.ACTWIN_PXL_WIDTH, self.ACTWIN_PXL_WIDTH), self.wheather_merging_layer)#インスタンスも引き数にできる
@@ -130,7 +130,7 @@ class Handtracking:
                     #ここでprin t (ins_jesture.result())などとしてins_jestureを呼び出してしまうと
                     # 次のdrowing_3 D viewが反応しなくなってしまうのでやらな い 
 
-                    self.ins_drowing.drowing_3Dview(self.ins_jesture.result(),"drowing_hand")#手のひらの表示をする場合は第二引き数に"drowing_hand"を
+                    self.ins_drowing.drowing_3Dview("drowing_hand")#手のひらの表示をする場合は第二引き数に"drowing_hand"を
 
 
                     ##############################################

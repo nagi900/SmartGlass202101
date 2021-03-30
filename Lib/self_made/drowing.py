@@ -128,6 +128,27 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                     (0,0),(0,50),(200,50),(200,100),(500,100),(500,500),(0,500)
                 ]),drowing.ALPHA_COLOR)
 
+    #ぐるぐる(進捗インジゲータ)をobjectlayersの一番上のレイヤーに表示
+    def drowProgressIndicator(self,progress=float):#0.0<=progress<=1.0
+        cv2.ellipse(
+            self.ImgLeft_ObjectLayers[-1],
+            [int(self.window_pxl_width/2),int(self.window_pxl_hight/2)],
+            [int(self.window_pxl_width/5),int(self.window_pxl_hight/5)],
+            0,
+            0,
+            int(progress*360),
+            [0,55+int(progress*200),455-int(progress*200)]
+        )
+        cv2.ellipse(
+            self.ImgRight_ObjectLayers[-1],
+            [int(self.window_pxl_width/2),int(self.window_pxl_hight/2)],
+            [int(self.window_pxl_width/5),int(self.window_pxl_hight/5)],
+            0,
+            0,
+            int(progress*360),
+            [0,55+int(progress*200),455-int(progress*200)]
+        )
+
     #objファイルをリストにする
     def readOBJ(self,path):
         #すでに読み込まれていたものであれば 
@@ -384,7 +405,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
 
     #mgnification:拡大 rotation:回転 taranslation:平行移動
     #mtlFolderPathはobjファイルで指定している、mtlファイルのpath drowingOBJ_whatLayerは何番目のレイヤーか(0~)
-    def drowingOBJ(self,path,magnification=[1,1,1],rotation=[[1,0,0],[0,1,0],[0,0,1]],translation=[0,0,0],targets=["vertex"],mtlFolderPath="./Objct_info/",drowingOBJ_whatLayer=int):
+    def drowingOBJ(self,path,drowingOBJ_whatLayer=0,magnification=[1,1,1],rotation=[[1,0,0],[0,1,0],[0,0,1]],translation=[0,0,0],targets=["vertex"],mtlFolderPath="./Objct_info/"):
         self.drowingOBJ_ObjFile = self.readOBJ(path)
         self.drowingOBJ_materialFileName = self.drowingOBJ_ObjFile["mtllib"]#materialファイル名
         self.drowingOBJ_materialS = self.readMTL(mtlFolderPath+self.drowingOBJ_materialFileName)#materialファイルに書かれたmaterialのリスト
@@ -446,20 +467,21 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 cv2.circle(self.ImgLeft_Hand, self.img_pro_insname_L.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
                 cv2.circle(self.ImgRight_Hand, self.img_pro_insname_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
 
-    def drowing_3Dview(self,text_prehansig,mode=None): #present handsign 現在のハンドサイン
+    def drowing_3Dview(self,mode=None): #present handsign 現在のハンドサイン
+        self.text_prehansig=self.judge_instance.handsignText()
         self.imgReset("base","all")
 
         if mode == "drowing_hand":
             self.imgReset("hand","all")
             self.drowing_hand_landmarks()
 
-        if self.text_prehansig_backup != text_prehansig: #1つ前のtext_prehansigと違うなら
+        if self.text_prehansig_backup != self.text_prehansig: #1つ前のself.text_prehansigと違うなら
             self.imgReset("mode","prehansig")
-            self.text_prehansig_backup = text_prehansig
-            cv2.putText(self.ImgLeft_Mode,text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
-            cv2.putText(self.ImgRight_Mode,text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
+            self.text_prehansig_backup = self.text_prehansig
+            cv2.putText(self.ImgLeft_Mode,self.text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
+            cv2.putText(self.ImgRight_Mode,self.text_prehansig,(200,40),drowing.FONT1,1,drowing.FONT_COLOR,2)
 
-        if text_prehansig == "keyboard_open":
+        if self.text_prehansig == "keyboard_open":
             if not "keyboard" in self.current_mode:
                 self.imgReset("mode","current_mode")
                 self.current_mode.append("keyboard")
@@ -478,16 +500,16 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         else:
             self.hand_landmarks_color=[255,0,0,255]
             
-        if text_prehansig == "shortcut_4":
+        if self.text_prehansig == "shortcut_4":
             if not "3Dobject" in self.current_mode:
                 self.imgReset("object")
-                self.drowingOBJ("./Object_info/semicon_01/semicon_01.obj",[100,100,100], [[1,0,0],[0,1,0],[0,0,1]] ,self.judge_instance.rect_trans()[5],["surface"],"./Object_info/semicon_01/")
+                self.drowingOBJ("./Object_info/semicon_01/semicon_01.obj", 0,magnification=[100,100,100],translation=self.judge_instance.rect_trans()[5],targets=["surface"],mtlFolderPath="./Object_info/semicon_01/")
                 self.imgReset("mode")
                 self.current_mode.append("3Dobject")#キーボード消えちゃうからとりあえず画面消去はしない
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
 
-        elif text_prehansig == "3D_tranceform":
+        elif self.text_prehansig == "3D_tranceform":
             #フレミングの法則の形にlandmardを線でつなぐ オブジェクトを表示しているときだけ線でつないだ方がいいかも
             cv2.line(
                 self.ImgLeft_Hand,
@@ -537,21 +559,22 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 self.current_mode.append("3Dobject")
                 #選択したobjectを変えるように
                 self.drowingOBJ(
-                    "./Object_info/semicon_01/semicon_01.obj",
-                    [100,100,100],
-                    [ [0,-self.judge_instance.midfin_vec()[2],self.judge_instance.midfin_vec()[1] ],[ self.judge_instance.midfin_vec()[2],0,-self.judge_instance.midfin_vec()[0] ],[ -self.judge_instance.midfin_vec()[1],self.judge_instance.midfin_vec()[0],0 ] ],
-                    self.judge_instance.rect_trans()[5],#人差し指の付け根を基準にして表示
-                    ["vertex","surface"],
-                    "./Object_info/semicon_01/",
+                    path="./Object_info/semicon_01/semicon_01.obj",
+                    drowingOBJ_whatLayer=0,
+                    magnification=[100,100,100],
+                    rotation=[ [0,-self.judge_instance.midfin_vec()[2],self.judge_instance.midfin_vec()[1] ],[ self.judge_instance.midfin_vec()[2],0,-self.judge_instance.midfin_vec()[0] ],[ -self.judge_instance.midfin_vec()[1],self.judge_instance.midfin_vec()[0],0 ] ],
+                    translation=self.judge_instance.rect_trans()[5],#人差し指の付け根を基準にして表示
+                    targets=["vertex","surface"],
+                    mtlFolderPath="./Object_info/semicon_01/",
                 )
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
                 cv2.putText(self.ImgRight_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
             
     
-        elif text_prehansig == "choice_mode_move" or text_prehansig == "choice_mode_cleck":
+        elif self.text_prehansig == "choice_mode_move" or self.text_prehansig == "choice_mode_cleck":
             cv2.circle(self.ImgLeft_Hand,self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[8]),10,drowing.CHOICE_COLOR,3)
             cv2.circle(self.ImgRight_Hand,self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8]),10,drowing.CHOICE_COLOR,3)
-            if text_prehansig == "choice_mode_cleck":
+            if self.text_prehansig == "choice_mode_cleck":
                 cv2.circle(self.ImgLeft_Hand,self.img_pro_insname_L.point_processing(self.judge_instance.rect_trans()[8]),20,drowing.CHOICE_COLOR,4)
                 cv2.circle(self.ImgRight_Hand,self.img_pro_insname_R.point_processing(self.judge_instance.rect_trans()[8]),20,drowing.CHOICE_COLOR,4)
                 if (#右目の画面の設定のところに人差し指があるなら
@@ -563,6 +586,6 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                     elif self.wheather_merging_layer[-2] == 1:
                         self.wheather_merging_layer[-2] = 0
     
-        elif text_prehansig == "sidewayspalm" and ("keyboard" in self.current_mode):
+        elif self.text_prehansig == "sidewayspalm" and ("keyboard" in self.current_mode):
             self.current_mode.pop(self.current_mode.index("keyboard"))#current_modeからkeyboardを削除
             self.imgReset("keyboard","all")
