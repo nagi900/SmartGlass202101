@@ -29,7 +29,8 @@ class plr_trns: #polar transformation
         self.object_coordinate_x=0.0
         self.object_coordinate_y=0.0
 
-    def point_processing(##点の位置を3Dに見えるように移動させるメソッド
+    #点の位置を3Dに見えるように移動させるメソッド
+    def point_processing(
         self, 
         original_position,#リスト[x,y,z] 直交座標
     ):

@@ -70,16 +70,22 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
         self.uvIDs = []
         self.normalIDs = []
 
+        #choiceObject
+        self.objectCriteriaPositions = {} #{0:[x0,y0,z0],1:[x1,y1,z1],2:[],..}　Criteria=基準,目安 self.ImgRignt_objectLayersのインデックス番号と同じkey名
+        #↑要は 当たり判定の立方体 の中心の点
+
         #drowing_keyboard
         self.LOADED_KEYBOARD_JSON = None
         self.key_position = None
         self.slided_key_positions_ver = []#縦方向に区切るリスト slided_key_positionに代入するときしか使わない
         self.slided_key_positions = []
 
-        
-
-        #drowing_hand
+        #drowing_hand 関数からいじれるようにしたかったので、クラス変数ではなくインスタンス変数にした
         self.hand_landmarks_color=[255,0,0,255]
+
+        #drowing_3Dview
+        self.COResult_ret=None
+
         
     #画面クリア
     def imgReset(self,layerName,resetRange="all",imgReset_whatLayer=0):
@@ -134,9 +140,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 ]),drowing.ALPHA_COLOR)
 
     #ぐるぐる(進捗インジゲータ)をobjectlayersの一番上のレイヤーに表示
-    def drowProgressIndicator(self,progress=float):#0.0<=progress<=1.0
+    def drowProgressIndicator(self,progress=float,whatObjectLayerNum=int):#0.0<=progress<=1.0
         cv2.ellipse(
-            self.ImgLeft_ObjectLayers[-1],
+            self.ImgLeft_ObjectLayers[whatObjectLayerNum],
             (int(self.window_pxl_width/2),int(self.window_pxl_hight/2)),
             (int(self.window_pxl_width/20),int(self.window_pxl_hight/20)),
             270,
@@ -147,7 +153,7 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
             cv2.LINE_AA
         )
         cv2.ellipse(
-            self.ImgRight_ObjectLayers[-1],
+            self.ImgRight_ObjectLayers[whatObjectLayerNum],
             (int(self.window_pxl_width/2),int(self.window_pxl_hight/2)),
             (int(self.window_pxl_width/20),int(self.window_pxl_hight/20)),
             270,
@@ -413,8 +419,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         pass
 
     #mgnification:拡大 rotation:回転 taranslation:平行移動
-    #mtlFolderPathはobjファイルで指定している、mtlファイルのpath drowingOBJ_whatLayerは何番目のレイヤーか(0~)
-    def drowingOBJ(self,path,drowingOBJ_whatLayer=0,magnification=[1,1,1],rotation=[[1,0,0],[0,1,0],[0,0,1]],translation=[0,0,0],targets=["vertex"],mtlFolderPath="./Objct_info/"):
+    #mtlFolderPathはobjファイルで指定している、mtlファイルのpath whatLayerNumは何番目のレイヤーか(0~)
+    def drowingOBJ(self,path,whatLayerNum=0,magnification=[1,1,1],rotation=[[1,0,0],[0,1,0],[0,0,1]],translation=[0,0,0],targets=["vertex"],mtlFolderPath="./Objct_info/"):
         self.drowingOBJ_ObjFile = self.readOBJ(path)
         self.drowingOBJ_materialFileName = self.drowingOBJ_ObjFile["mtllib"]#materialファイル名
         self.drowingOBJ_materialS = self.readMTL(mtlFolderPath+self.drowingOBJ_materialFileName)#materialファイルに書かれたmaterialのリスト
@@ -435,8 +441,8 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                     self.processed_obj_vertices_position[1][self.vertex_num] = self.imgProInstance_R.point_processing(obj_vertex)
                     #targetにvertexが指定されているなら、この時一緒に頂点を描く
                     if ("vertex" in targets) and self.processed_obj_vertices_position[0][self.vertex_num] and self.processed_obj_vertices_position[1][self.vertex_num]: 
-                        cv2.circle(self.ImgLeft_ObjectLayers[drowingOBJ_whatLayer], self.processed_obj_vertices_position[0][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
-                        cv2.circle(self.ImgRight_ObjectLayers[drowingOBJ_whatLayer], self.processed_obj_vertices_position[1][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
+                        cv2.circle(self.ImgLeft_ObjectLayers[whatLayerNum], self.processed_obj_vertices_position[0][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
+                        cv2.circle(self.ImgRight_ObjectLayers[whatLayerNum], self.processed_obj_vertices_position[1][self.vertex_num] ,1,(int(obj_vertex[2]*0.5), int(255-obj_vertex[2]*0.5), int(obj_vertex[2]*0.5) ))
                 self.vertex_num += 1
                 
             #面
@@ -457,15 +463,26 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                             self.drowingOBJ_processed_CurrentSurfaceVerticesPositions_L.append( self.processed_obj_vertices_position[0][current_surface_vertices_ID] )
                             self.drowingOBJ_processed_CurrentSurfaceVerticesPositions_R.append( self.processed_obj_vertices_position[1][current_surface_vertices_ID] )
                         cv2.fillConvexPoly(
-                            self.ImgLeft_ObjectLayers[drowingOBJ_whatLayer],
+                            self.ImgLeft_ObjectLayers[whatLayerNum],
                             np.array(self.drowingOBJ_processed_CurrentSurfaceVerticesPositions_L),
                             self.drowingOBJ_material#ここのaの値をいい感じに調整して、面が重なると色が濃くなるようにしてもいいかも
                         )
                         cv2.fillConvexPoly(
-                            self.ImgRight_ObjectLayers[drowingOBJ_whatLayer],
+                            self.ImgRight_ObjectLayers[whatLayerNum],
                             np.array(self.drowingOBJ_processed_CurrentSurfaceVerticesPositions_R),
                             self.drowingOBJ_material
                         )
+
+    #positionとobjectを照合してpositionと一致するself.objectLayersのインデックス番号を返す 戻り値の1番目は一致するものがあったかどうか
+    def choiceObject(self,position=list,hitRange=50):
+        for objectLayerNum in self.objectCriteriaPositions:
+            if (
+                abs(self.objectCriteriaPositions[objectLayerNum][0] - position[0]) < hitRange and
+                abs(self.objectCriteriaPositions[objectLayerNum][1] - position[1]) < hitRange and
+                abs(self.objectCriteriaPositions[objectLayerNum][2] - position[2]) < hitRange
+            ):
+                return True,objectLayerNum
+        return None,None
 
     #手を書く 現時点では点のみ
     def drowing_hand_landmarks(self):
@@ -476,8 +493,9 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 cv2.circle(self.ImgLeft_Hand, self.imgProInstance_L.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
                 cv2.circle(self.ImgRight_Hand, self.imgProInstance_R.point_processing(transd_lndmrk) ,3,self.hand_landmarks_color,2)
 
-    def drowing_3Dview(self,mode=None): #present handsign 現在のハンドサイン
-        self.present_HandSignText=self.judge_instance.handsignText()
+    #メインの関数 ここでは「各関数の呼び出し」と「関数を作るほどではない処理」のみ行う
+    def drowing_3Dview(self,mode=None): 
+        self.present_HandSignText=self.judge_instance.handsignText()#present=現在の
         self.imgReset("base","all")
 
         if mode == "drowing_hand":
@@ -508,13 +526,15 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
             self.keybaord_typing()
         else:
             self.hand_landmarks_color=[255,0,0,255]
-            
+        
+        #self.drowProgressIndicatorの引き数whatLayerNum と self.drowingOBJの引き数whatLayerNum と self.objectCriteriaPositionsのキー をここでは0としているが、将来的には自動で空いているlayerを指定するようにしたい
         if self.present_HandSignText == "shortcut_4_wait":
-            self.drowProgressIndicator( self.timeMeasureInstance.targetCount("shortcut_4")/2 )
+            self.drowProgressIndicator( self.timeMeasureInstance.targetCount("shortcut_4")/2, whatObjectLayerNum=0 )
         elif self.present_HandSignText == "shortcut_4":
             if not "3Dobject" in self.current_mode:
                 self.imgReset("object")
-                self.drowingOBJ("./Object_info/semicon_01/semicon_01.obj", 0,magnification=[100,100,100],translation=self.judge_instance.rect_trans()[5],targets=["surface"],mtlFolderPath="./Object_info/semicon_01/")
+                self.drowingOBJ("./Object_info/semicon_01/semicon_01.obj", 0, magnification=[100,100,100],translation=self.judge_instance.rect_trans()[5],targets=["surface"],mtlFolderPath="./Object_info/semicon_01/")
+                self.objectCriteriaPositions[0]=self.judge_instance.rect_trans()[5]
                 self.imgReset("mode")
                 self.current_mode.append("3Dobject")
                 cv2.putText(self.ImgLeft_Mode,str(self.current_mode),(200,80),drowing.FONT2,1,drowing.FONT_COLOR,2)
@@ -564,14 +584,15 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                 drowing.CHOICE_COLOR,
                 3,
             )
-            if "3Dobject" in self.current_mode:
+            if ("3Dobject" in self.current_mode) and self.COResult_ret:#オブジェクトを表示しており、選択しているオブジェクトがあるなら
                 self.imgReset("object")
                 self.imgReset("mode")
                 self.current_mode.append("3Dobject")
+                self.objectCriteriaPositions[self.COResult_num]=self.judge_instance.rect_trans()[5]
                 #選択したobjectを変えるように
                 self.drowingOBJ(
                     path="./Object_info/semicon_01/semicon_01.obj",
-                    drowingOBJ_whatLayer=0,
+                    whatLayerNum=self.choiced_objectLayerNum,
                     magnification=[100,100,100],
                     rotation=[ [0,-self.judge_instance.midfin_vec()[2],self.judge_instance.midfin_vec()[1] ],[ self.judge_instance.midfin_vec()[2],0,-self.judge_instance.midfin_vec()[0] ],[ -self.judge_instance.midfin_vec()[1],self.judge_instance.midfin_vec()[0],0 ] ],
                     translation=self.judge_instance.rect_trans()[5],#人差し指の付け根を基準にして表示
@@ -596,6 +617,14 @@ class drowing:#モードの記述や画面クリアなどで、相対座標で�
                         self.wheather_merging_layer[-2] = 1
                     elif self.wheather_merging_layer[-2] == 1:
                         self.wheather_merging_layer[-2] = 0
+                else:
+                    self.COResult_ret,self.COResult_num=self.choiceObject(self.judge_instance.rect_trans()[8],100)
+                    if self.COResult_ret:#人差し指の位置が各オブジェクトの基準点と一致する(誤差±50mm)か調べる
+                        self.choiced_objectLayerNum = self.COResult_num
+                        cv2.circle(self.ImgRight_Hand,self.imgProInstance_R.point_processing(self.objectCriteriaPositions[self.COResult_num]),30,[0,0,255,255],2)
+                        cv2.circle(self.ImgLeft_Hand,self.imgProInstance_L.point_processing(self.objectCriteriaPositions[self.COResult_num]),30,[0,0,255,255],2)
+                    else:#一致するものがなければNoneを代入しなおし
+                        self.choiced_objectLayerNum = None
     
         elif self.present_HandSignText == "sidewayspalm" and ("keyboard" in self.current_mode):
             self.current_mode.pop(self.current_mode.index("keyboard"))#current_modeからkeyboardを削除
