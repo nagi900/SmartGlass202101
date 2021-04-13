@@ -139,8 +139,8 @@ class Handtracking:
             
             #保存
             for layer_num in range(self.LAYER_NUM):
-                cv2.imwrite(f'Image_layer/ImgLeft_{layer_num}.png',self.LeftLayers[layer_num])#merge後のlayer0の保存は一週遅れる
-                cv2.imwrite(f'Image_layer/ImgRight_{layer_num}.png',self.RightLayers[layer_num])
+                cv2.imwrite(f'./Image_layer/ImgLeft_{layer_num}.png',self.LeftLayers[layer_num])#merge後のlayer0の保存は一週遅れる
+                cv2.imwrite(f'./Image_layer/ImgRight_{layer_num}.png',self.RightLayers[layer_num])
             #合成 drowing内でやった方がいいかも
             bg_L = Image.open(self.IMG_LEFT_LAYER_PATH_0).convert("RGBA")
             bg_R = Image.open(self.IMG_RIGHT_LAYER_PATH_0).convert("RGBA")
@@ -164,10 +164,15 @@ class Handtracking:
             #
             if cv2.waitKey(5) & 0xFF == 27  or not __name__=="__main__":#外部から実行されていても一周で終わる
                 break
+
+    #最後にこれを実行
+    def final(self):
         self.hands.close()
         self.cap.release()
 
         #out.release()#オリジナル　録画
 
 if __name__=="__main__":
-    Handtracking().run()
+    handtrackingApp = Handtracking()
+    handtrackingApp.run()
+    handtrackingApp.final()

@@ -4,6 +4,7 @@ Config.set('graphics', 'height', '480')
 
 from kivy.app import App
 from kivy.uix.widget import Widget
+from kivy.uix.image import Image
 from kivy.properties import StringProperty ,ObjectProperty
 from kivy.core.text import LabelBase,DEFAULT_FONT#日本語を使えるようにする
 from kivy.resources import resource_add_path #多分画像表示のパス取得用のやつ
@@ -25,25 +26,29 @@ import handtracking
 
 
 class SmartGlassWidget(Widget):
-    image_L = ObjectProperty(None)
-    image_R = ObjectProperty(None)
-    image_L_src = StringProperty("")
+    #image_L = ObjectProperty(None)
+    #image_R = ObjectProperty(None)
+    image_L_src = StringProperty("")#これは必ずクラス変数として書かないとself.image_L_srcが読み込めない なんで？
     image_R_src = StringProperty("")
 
     def __init__(self, **kwargs):
         super(SmartGlassWidget,self).__init__(**kwargs)
-        self.image_L_src = "./test/landmark_line.png"
-        self.image_R_src = "./test/calender.png"
-        Clock.schedule_interval(self.update,0.01)
+        self.image_L_src = "./Image_layer/ImgLeft_0.png"
+        self.image_R_src = "./Image_layer/ImgRight_0.png"
+        #self.ids.image_L.sorce = self.image_L_src #idで割り当てるときはなんかいろいろやらなきゃいけないっぽい
+        #self.ids.image_R.sorce = self.image_R_src
+        #self.image_L = Image(source=self.image_L_src) #とりあえずこれ(←)のコメントアウトを解除して、updateのimga_Lのidsを削除しても動く　reloadはされない
+        #self.image_R = Image(source=self.image_R_src)
+        self.handtrackingApp=handtracking.Handtracking()
         pass
 
     def update(self,dt):
-        print("更新")
-        self.image_L_src = "./test/landmark_line.png"
-        self.image_R_src = "./test/calender.png"
+        self.handtrackingApp.run()
+        self.ids.image_L.reload() #idで割り当てるときはなんかいろいろやらなきゃいけないっぽい
+        self.ids.image_R.reload()
 
     def StartbuttonClicked(self):
-        handtracking.HandTracking().run()#多分これをやっている間は更新が止まる
+        Clock.schedule_interval(self.update,0.01)
         pass
     
 class SmartGlassApp(App):
