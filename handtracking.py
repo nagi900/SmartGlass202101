@@ -160,7 +160,7 @@ class Handtracking:
             if __name__=="__main__":
                 cv2.imshow(self.ACTWIN_L_NAME,Left)
                 cv2.imshow(self.ACTWIN_R_NAME,Right)
-                cv2.imshow('MediaPipe Hands', image)
+            cv2.imshow('MediaPipe Hands', image)
             #
             if cv2.waitKey(5) & 0xFF == 27  or not __name__=="__main__":#外部から実行されていても一周で終わる
                 break

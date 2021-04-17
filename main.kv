@@ -1,0 +1,37 @@
+#: import FadeTransition kivy.uix.screenmanager.FadeTransition
+
+ScreenManagement: #ScreenManagerの子クラスの名前
+    transition: FadeTransition()
+    StartScreen: #一番上のscreenが最初の画面
+    SmartGlassWidget:
+
+<StartScreen>:
+    name: "start"
+    Button:
+        text: "Tap to Start"
+        font_size: 50
+        on_release: app.root.current = "view"#離したとき かな？
+
+<SmartGlassWidget>:
+    name: "view"
+    BoxLayout:
+        orientation: "vertical"
+        size: root.size
+        BoxLayout:
+            Image:
+                id: image_L
+                source: root.image_L_src
+            Image:
+                id: image_R
+                source: root.image_R_src
+                
+        Button:
+            size_hint_y:0.2
+            text:"Start App"
+            color: 1,0.5,0,1
+            on_press: root.StartbuttonClicked()
+        Button:
+            size_hint_y:0.2
+            text:"Back Home"
+            color: 1,0.5,0,1
+            on_press: app.root.current = "start"

@@ -5,6 +5,8 @@ Config.set('graphics', 'height', '480')
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
+from kivy.lang import Builder#これ何？
+from kivy.uix.screenmanager import ScreenManager, Screen#, FadeTransition#画面遷移のやつ
 from kivy.properties import StringProperty ,ObjectProperty
 from kivy.core.text import LabelBase,DEFAULT_FONT#日本語を使えるようにする
 from kivy.resources import resource_add_path #多分画像表示のパス取得用のやつ
@@ -18,16 +20,16 @@ import random
 import threading
 import time
 
-import handtracking 
+import handtracking
 
 #resource_add_path("./fonts")#デフォルトのフォントを変更
 #LabelBase.register(DEFAULT_FONT,"mplus-2c-regular.ttf") #日本語
 #resource_add_path("./Image_layer")
 
+class StartScreen(Screen):
+    pass
 
-class SmartGlassWidget(Widget):
-    #image_L = ObjectProperty(None)
-    #image_R = ObjectProperty(None)
+class SmartGlassWidget(Screen):#WidgetとScreenの違いは？
     image_L_src = StringProperty("")#これは必ずクラス変数として書かないとself.image_L_srcが読み込めない なんで？
     image_R_src = StringProperty("")
 
@@ -35,29 +37,27 @@ class SmartGlassWidget(Widget):
         super(SmartGlassWidget,self).__init__(**kwargs)
         self.image_L_src = "./Image_layer/ImgLeft_0.png"
         self.image_R_src = "./Image_layer/ImgRight_0.png"
-        #self.ids.image_L.sorce = self.image_L_src #idで割り当てるときはなんかいろいろやらなきゃいけないっぽい
-        #self.ids.image_R.sorce = self.image_R_src
-        #self.image_L = Image(source=self.image_L_src) #とりあえずこれ(←)のコメントアウトを解除して、updateのimga_Lのidsを削除しても動く　reloadはされない
-        #self.image_R = Image(source=self.image_R_src)
         self.handtrackingApp=handtracking.Handtracking()
-        pass
 
     def update(self,dt):
         self.handtrackingApp.run()
-        self.ids.image_L.reload() #idで割り当てるときはなんかいろいろやらなきゃいけないっぽい
+        self.ids.image_L.reload() #kvファイルでid:としていれば、pyファイルからは何もせずにself.idsから呼び出していい
         self.ids.image_R.reload()
 
     def StartbuttonClicked(self):
         Clock.schedule_interval(self.update,0.01)
         pass
     
-class SmartGlassApp(App):
+class ScreenManagement(ScreenManager):
+    pass
+
+class MainApp(App):
     def __init__(self,**kwargs):
-        super(SmartGlassApp,self).__init__(**kwargs)
+        super(MainApp,self).__init__(**kwargs)
         self.title = "SmartGlass"
 
     def build(self):
-        return SmartGlassWidget()
+        return Builder.load_file("main.kv")
 
 if __name__ == "__main__":
-    SmartGlassApp().run()
+    MainApp().run()
