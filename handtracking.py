@@ -4,7 +4,7 @@ import time
 import numpy as np
 import math
 from PIL import Image
-from Lib.self_made import (
+from self_made import (
                         handsign_judge,
                         time_mesure,
                         drowing,
@@ -120,18 +120,16 @@ class Handtracking:
                     #オリジナル################################
 
                     #タプルhanc_landmarks内の辞書型landmarkを取得　
-                    #辞書型を入れるにはタプル型の方が良い為　またパフォーマンスもタプル型の穂王が良い為
-                    #詳細は調べる
+                    #辞書型を入れるにはタプル型の方が良い為　またパフォーマンスもタプル型の穂王が良い為、タプル型を使用
                     for idx, landmark in enumerate(hand_landmarks.landmark):
                         # 番号とz座標を標準出力に表示 なんでlandmark[z]じゃダメなのか後で調べる
-                        #print(idx,landmark.z)
                         
                         self.ins_jesture.setting(idx,landmark.x,landmark.y,landmark.z)
                     
-                    #ここでprin t (ins_jesture.result())などとしてins_jestureを呼び出してしまうと
+                    #ここでprint(ins_jesture.result())などとしてins_jestureを呼び出してしまうと
                     # 次のdrowing_3 D viewが反応しなくなってしまうのでやらな い 
 
-                    self.ins_drowing.drowing_3Dview("drowing_hand")#手のひらの表示をする場合は第二引き数に"drowing_hand"を
+                    self.ins_drowing.drowing_3Dview("drowing_hand")#手のひらを描画する場合は第二引き数に"drowing_hand"を
 
 
                     ##############################################
@@ -155,9 +153,9 @@ class Handtracking:
             #for文を使わないで、縦に羅列した方がfpsが早かった気がする
 
             #表示
-            Left = cv2.imread(self.IMG_LEFT_LAYER_PATH_0)#同じインスタンス名で読み込むと画像が重なってしまう
-            Right = cv2.imread(self.IMG_RIGHT_LAYER_PATH_0)
             if __name__=="__main__":
+                Left = cv2.imread(self.IMG_LEFT_LAYER_PATH_0)#同じインスタンス名で読み込むと画像が重なってしまう
+                Right = cv2.imread(self.IMG_RIGHT_LAYER_PATH_0)
                 cv2.imshow(self.ACTWIN_L_NAME,Left)
                 cv2.imshow(self.ACTWIN_R_NAME,Right)
             cv2.imshow('MediaPipe Hands', image)
